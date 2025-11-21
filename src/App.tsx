@@ -19,16 +19,17 @@ function App() {
       <h1>Vite + React</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
-          if (isLogin) {
-            await login(username, password);
-         } else {
-            if (!username.trim()) throw new Error("Username is required.");
-          if (!email.includes('@') || !email.includes('.')) throw new Error("Invalid email format.");
-          if (password.length < 4) throw new Error("Password too short.");
-          await register(username, email, password);
-         }</p>
-      </>
-      )
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
 }
 
-      export default App
+export default App
