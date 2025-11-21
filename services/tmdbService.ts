@@ -20,6 +20,14 @@ const IMAGE_BASE = 'https://image.tmdb.org/t/p';
 export const getImageUrl = (path: string | null, size: 'w500' | 'original' = 'w500') => {
   if (!path) return 'https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=1000&auto=format&fit=crop';
   if (path.startsWith('http')) return path;
+
+  // Use image proxy in production
+  const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('.pages.dev');
+
+  if (isProduction) {
+    return `/api/images?path=${encodeURIComponent(path)}&size=${size}`;
+  }
+
   return `${IMAGE_BASE}/${size}${path}`;
 };
 
