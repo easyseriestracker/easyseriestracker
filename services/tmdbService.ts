@@ -36,27 +36,53 @@ const mapTmdbToShow = (data: any): Show => {
 };
 
 const fetchFromTmdb = async (endpoint: string, params: Record<string, string> = {}) => {
-  const apiKey = await getApiKey();
-  if (!apiKey) return null;
+  // Use Cloudflare Function proxy in production to bypass blocking
+  const isProduction = window.location.hostname.includes('.pages.dev');
 
-  const queryParams = new URLSearchParams({
-    api_key: apiKey,
-    language: 'en-US',
-    include_adult: 'false',
-    ...params
-  });
+  if (isProduction) {
+    // Use proxy endpoint
+    const queryParams = new URLSearchParams({
+      endpoint,
+      language: 'en-US',
+      include_adult: 'false',
+      ...params
+    });
 
-  try {
-    const res = await fetch(`${BASE_URL}${endpoint}?${queryParams}`);
-    if (res.status === 401) {
-      console.warn("TMDB API Key is invalid or unauthorized (401).");
+    try {
+      const res = await fetch(`/api/tmdb?${queryParams}`);
+      if (!res.ok) {
+        console.warn(`Proxy Error: ${res.status}`);
+        return null;
+      }
+      return await res.json();
+    } catch (err) {
+      console.error('Proxy fetch error:', err);
       return null;
     }
-    if (!res.ok) throw new Error(`TMDB Error: ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    console.error(err);
-    return null;
+  } else {
+    // Direct TMDB for localhost
+    const apiKey = await getApiKey();
+    if (!apiKey) return null;
+
+    const queryParams = new URLSearchParams({
+      api_key: apiKey,
+      language: 'en-US',
+      include_adult: 'false',
+      ...params
+    });
+
+    try {
+      const res = await fetch(`${BASE_URL}${endpoint}?${queryParams}`);
+      if (res.status === 401) {
+        console.warn("TMDB API Key is invalid or unauthorized (401).");
+        return null;
+      }
+      if (!res.ok) throw new Error(`TMDB Error: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   }
 };
 
