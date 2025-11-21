@@ -1151,7 +1151,7 @@ const Profile = () => {
          if (newFavs.length < 3 && !newFavs.find(s => s.id === show.id)) {
             newFavs.push(show);
          }
-         await updateUser({ ...profileUser, topFavorites: newFavs });
+         await updateTopFavorites(newFavs);
          await refreshUser();
          setProfileUser({ ...profileUser, topFavorites: newFavs });
          setShowFavSearchModal(false);
@@ -1162,7 +1162,7 @@ const Profile = () => {
    const removeFav = async (id: number) => {
       if (profileUser) {
          const newFavs = profileUser.topFavorites.filter(s => s.id !== id);
-         await updateUser({ ...profileUser, topFavorites: newFavs });
+         await updateTopFavorites(newFavs);
          await refreshUser();
          setProfileUser({ ...profileUser, topFavorites: newFavs });
       }
