@@ -413,7 +413,18 @@ const RatedShowCard = ({ id, rating }: { id: number, rating: number }) => {
 
 const SimpleShowCard = ({ id }: { id: number }) => {
    const [show, setShow] = useState<ShowDetails | null>(null);
-   useEffect(() => { getShowDetails(id).then(setShow) }, [id]);
+   const [error, setError] = useState(false);
+   useEffect(() => { 
+      if (!id || isNaN(id)) {
+         setError(true);
+         return;
+      }
+      getShowDetails(id).then(data => {
+         if (data) setShow(data);
+         else setError(true);
+      }).catch(() => setError(true));
+   }, [id]);
+   if (error || !id || isNaN(id)) return <div className="aspect-[2/3] bg-white/5 rounded-lg flex items-center justify-center text-gray-500 text-xs">Not found</div>;
    if (!show) return <div className="aspect-[2/3] bg-white/5 animate-pulse rounded-lg" />;
    return <ShowCard show={show} />
 }
@@ -1316,9 +1327,12 @@ const Profile = () => {
 
             {activeTab === 'watchlist' && (
                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {populatedWatchlist.map(item => (
+                  {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).map(item => (
                      <SimpleShowCard key={item.showId} id={item.showId} />
                   ))}
+                  {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).length === 0 && (
+                     <div className="col-span-full text-center text-gray-500 py-12">No shows in watchlist yet.</div>
+                  )}
                </div>
             )}
          </div>
@@ -1851,7 +1865,18 @@ const AuthPage = () => {
          await refreshUser();
          navigate('/');
       } catch (err: any) {
-         setError(err.message === "Invalid credentials." ? t('incorrectCreds') : err.message);
+         let errorMessage = err.message;
+         
+         // Handle specific error messages
+         if (err.message === "Invalid credentials.") {
+            errorMessage = t('incorrectCreds');
+         } else if (err.message?.toLowerCase().includes('email signups are disabled') || 
+                    err.message?.toLowerCase().includes('email logins are disabled') ||
+                    err.message?.toLowerCase().includes('email authentication is currently disabled')) {
+            errorMessage = 'Email authentication is currently disabled. Please check your Supabase dashboard settings to enable email authentication.';
+         }
+         
+         setError(errorMessage);
       }
    };
    return (

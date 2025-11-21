@@ -118,9 +118,12 @@ export const getUserById = async (userId: string): Promise<User | undefined> => 
   const { data: ratings } = await supabase.from('ratings').select('show_id, rating').eq('user_id', userId);
   if (ratings) ratings.forEach(r => user.ratings[r.show_id] = r.rating);
 
-  // Fetch Watchlist count
-  const { count } = await supabase.from('watchlists').select('*', { count: 'exact', head: true }).eq('user_id', userId);
-  user.watchlist = Array(count || 0).fill(null) as any; // Hack to show count
+  // Fetch Watchlist items (not just count) so we can display them
+  const { data: watchlist } = await supabase
+    .from('watchlists')
+    .select('show_id, added_at')
+    .eq('user_id', userId);
+  user.watchlist = watchlist?.map(w => ({ showId: w.show_id, addedAt: w.added_at })) || [];
 
   return user;
 };
@@ -146,7 +149,13 @@ export const login = async (identifier: string, password: string): Promise<void>
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) {
+    // Handle specific Supabase error messages
+    if (error.message?.toLowerCase().includes('email logins are disabled')) {
+      throw new Error('Email authentication is currently disabled. Please contact support or use an alternative login method.');
+    }
+    throw error;
+  }
 };
 
 export const register = async (username: string, email: string, password: string): Promise<void> => {
@@ -157,7 +166,13 @@ export const register = async (username: string, email: string, password: string
       data: { username }
     }
   });
-  if (error) throw error;
+  if (error) {
+    // Handle specific Supabase error messages
+    if (error.message?.toLowerCase().includes('email signups are disabled')) {
+      throw new Error('Email signups are currently disabled. Please contact support or use an alternative signup method.');
+    }
+    throw error;
+  }
 };
 
 export const logout = async () => {
@@ -167,13 +182,14 @@ export const logout = async () => {
 export const updateUser = async (updatedUser: User) => {
   // 1. Update Auth Email if changed
   // Note: This sends a confirmation email to the new address.
+  // Only update email if it's actually different and both values are valid
   const { data: { user } } = await supabase.auth.getUser();
-  if (user && user.email !== updatedUser.email) {
+  if (user && updatedUser.email && user.email && 
+      user.email.trim().toLowerCase() !== updatedUser.email.trim().toLowerCase()) {
     const { error } = await supabase.auth.updateUser({ email: updatedUser.email });
     if (error) throw error;
   }
 
-  // 2. Update Profile Fields
   // 2. Update Profile Fields
   await supabase.from('profiles').update({
     username: updatedUser.username,
