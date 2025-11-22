@@ -2021,6 +2021,7 @@ const ShowPage = () => {
    const [reviewContent, setReviewContent] = useState('');
    const [reviews, setReviews] = useState<Review[]>([]);
    const [showListModal, setShowListModal] = useState(false);
+   const isRatingUpdatingRef = useRef(false);
    const { t } = useTranslation();
    const navigate = useNavigate();
 
@@ -2041,8 +2042,11 @@ const ShowPage = () => {
    }, [id, setBackground]);
 
    useEffect(() => {
-      if (user && id) {
-         setUserRating(user.ratings[parseInt(id)] || 0);
+      // Only update userRating from user if we're not in the middle of updating it
+      if (user && id && !isRatingUpdatingRef.current) {
+         const showId = parseInt(id);
+         const ratingFromUser = user.ratings[showId] || 0;
+         setUserRating(ratingFromUser);
       }
    }, [user, id]);
 
@@ -2050,24 +2054,44 @@ const ShowPage = () => {
       if (!user) return navigate('/login');
       if (!id) return;
       
+      const showId = parseInt(id);
+      
+      // Set flag to prevent useEffect from overriding our update
+      isRatingUpdatingRef.current = true;
+      
       try {
-         await rateShow(parseInt(id), r);
+         // Call rateShow to update database
+         await rateShow(showId, r);
+         
          // Immediately update local state
          setUserRating(r);
-         // Refresh user data and wait for it to complete
+         
+         // Refresh user data
          await refreshUser();
-         // Force update userRating after refresh
+         
+         // After refresh, get updated user and sync rating
          const updatedUser = await getCurrentUser();
          if (updatedUser) {
-            const showId = parseInt(id);
-            const newRating = updatedUser.ratings[showId] || 0;
-            setUserRating(newRating);
+            // Check if rating was actually removed (should be 0 or undefined)
+            const currentRating = updatedUser.ratings[showId];
+            if (r === 0) {
+               // If we're removing, ensure it's 0
+               setUserRating(0);
+            } else {
+               // Otherwise use the updated rating
+               setUserRating(currentRating || 0);
+            }
          } else {
-            // If no user, set to 0
             setUserRating(0);
          }
-      } catch (error) {
+      } catch (error: any) {
          console.error('Error rating show:', error);
+         alert(`Failed to ${r === 0 ? 'remove' : 'update'} rating: ${error.message || 'Unknown error'}`);
+      } finally {
+         // Reset flag after a short delay to allow useEffect to work normally again
+         setTimeout(() => {
+            isRatingUpdatingRef.current = false;
+         }, 1000);
       }
    };
 

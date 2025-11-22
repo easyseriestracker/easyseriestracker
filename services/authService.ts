@@ -317,20 +317,22 @@ export const updateTopFavorites = async (shows: Show[]) => {
 
 export const rateShow = async (showId: number, rating: number) => {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) throw new Error('User not authenticated');
 
   // If rating is 0, remove the rating
   if (rating === 0) {
-    await supabase
+    const { error } = await supabase
       .from('ratings')
       .delete()
       .eq('user_id', user.id)
       .eq('show_id', showId);
+    if (error) throw error;
   } else {
     // Otherwise upsert the rating
-    await supabase
+    const { error } = await supabase
       .from('ratings')
       .upsert({ user_id: user.id, show_id: showId, rating });
+    if (error) throw error;
   }
 };
 
