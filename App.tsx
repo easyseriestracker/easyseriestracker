@@ -595,26 +595,27 @@ const Home = () => {
    }, [searchQuery]);
 
    useEffect(() => {
-      // Rating reminder logic: show on home page visit
-      if (user && user.watchlist.length > 0) {
-         // Check if we've shown reminder in this session
-         const hasShownToday = sessionStorage.getItem('ratingReminderShown');
+      // Rating reminder: show once when user first visits Home page in this session
+      if (!user || user.watchlist.length === 0) return;
 
-         if (!hasShownToday) {
-            // Pick random unrated show from watchlist
-            const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
-            if (unratedShows.length > 0) {
-               const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
-               setTimeout(() => {
-                  getShowDetails(randomShow.showId).then(show => {
-                     setReminderShow(show);
-                     setShowRatingReminder(true);
-                     sessionStorage.setItem('ratingReminderShown', 'true');
-                  });
-               }, 2000); // 2 second delay after page load
-            }
-         }
-      }
+      const hasShownThisSession = sessionStorage.getItem('ratingReminderShown');
+      if (hasShownThisSession) return; // Already shown this session
+
+      // Find unrated shows from watchlist
+      const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
+      if (unratedShows.length === 0) return; // All shows are rated
+
+      // Show reminder after short delay
+      const timer = setTimeout(() => {
+         const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
+         getShowDetails(randomShow.showId).then(show => {
+            setReminderShow(show);
+            setShowRatingReminder(true);
+            sessionStorage.setItem('ratingReminderShown', 'true');
+         });
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(timer);
    }, [user]);
 
    const handleReminderRate = async (rating: number) => {
