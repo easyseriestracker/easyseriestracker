@@ -511,8 +511,7 @@ const Home = () => {
             if (validTrending.length > 0) {
                setHeroCandidates(validTrending.slice(0, 5));
             }
-            setSections(prev => [
-               ...prev,
+            setSections([
                { title: t('globalTrending'), data: trending.slice(0, 6), link: "/browse?sort=popularity.desc" }
             ]);
             setDataLoaded(true); // Show UI immediately
@@ -596,22 +595,23 @@ const Home = () => {
    }, [searchQuery]);
 
    useEffect(() => {
-      // Rating reminder logic: show every 2nd visit
+      // Rating reminder logic: show on home page visit
       if (user && user.watchlist.length > 0) {
-         const visitCount = parseInt(localStorage.getItem('visitCount') || '0');
-         const newVisitCount = visitCount + 1;
-         localStorage.setItem('visitCount', newVisitCount.toString());
+         // Check if we've shown reminder in this session
+         const hasShownToday = sessionStorage.getItem('ratingReminderShown');
 
-         // Show reminder every 2nd visit
-         if (newVisitCount % 2 === 0) {
+         if (!hasShownToday) {
             // Pick random unrated show from watchlist
             const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
             if (unratedShows.length > 0) {
                const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
-               getShowDetails(randomShow.showId).then(show => {
-                  setReminderShow(show);
-                  setShowRatingReminder(true);
-               });
+               setTimeout(() => {
+                  getShowDetails(randomShow.showId).then(show => {
+                     setReminderShow(show);
+                     setShowRatingReminder(true);
+                     sessionStorage.setItem('ratingReminderShown', 'true');
+                  });
+               }, 2000); // 2 second delay after page load
             }
          }
       }
@@ -1906,15 +1906,22 @@ const ShowPage = () => {
                   {/* Watch Providers */}
                   <div className="bg-[#1f2329]/80 backdrop-blur-md p-5 rounded-xl border border-white/10">
                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">Where to Watch</div>
-                     <div className="text-center">
+                     <div className="space-y-2">
+                        <div className="text-xs text-gray-400 text-center mb-3">Available on popular platforms:</div>
+                        <div className="flex flex-wrap justify-center gap-2 mb-3">
+                           <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-gray-300">Netflix</span>
+                           <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-gray-300">Prime Video</span>
+                           <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-gray-300">Disney+</span>
+                           <span className="px-2 py-1 bg-white/5 rounded text-[10px] font-bold text-gray-300">Hulu</span>
+                        </div>
                         <a
                            href={`https://www.justwatch.com/us/tv-show/${show.name.toLowerCase().replace(/ /g, '-')}`}
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="inline-flex items-center gap-2 text-sm font-bold text-accentGreen hover:text-white transition-colors group"
+                           className="flex items-center justify-center gap-2 text-xs font-bold text-accentGreen hover:text-white transition-colors group py-2 px-3 bg-accentGreen/5 hover:bg-accentGreen/10 rounded-lg"
                         >
-                           <Globe size={16} className="group-hover:rotate-12 transition-transform" />
-                           Find Streaming Services →
+                           <Globe size={14} className="group-hover:rotate-12 transition-transform" />
+                           Check Availability on JustWatch
                         </a>
                      </div>
                   </div>
