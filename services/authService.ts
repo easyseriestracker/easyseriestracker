@@ -61,6 +61,18 @@ export const updateLastSeen = async () => {
   await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
 };
 
+export const sendPasswordResetEmail = async (email: string) => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/#/reset-password`,
+  });
+  if (error) throw error;
+};
+
+export const updatePassword = async (newPassword: string) => {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+};
+
 export const searchUsers = async (query: string): Promise<User[]> => {
   const { data } = await supabase.from('profiles').select('*').ilike('username', `%${query}%`).limit(5);
   if (!data) return [];

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -2897,11 +2897,32 @@ const AuthPage = () => {
                   </div>
 
                   {isLogin && (
-                     <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => setRememberMe(!rememberMe)} className={`w-4 h-4 rounded border border-white/20 flex items-center justify-center transition ${rememberMe ? 'bg-accentGreen border-accentGreen' : 'bg-transparent'}`}>
-                           {rememberMe && <Check size={12} className="text-black" />}
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <button type="button" onClick={() => setRememberMe(!rememberMe)} className={`w-4 h-4 rounded border border-white/20 flex items-center justify-center transition ${rememberMe ? 'bg-accentGreen border-accentGreen' : 'bg-transparent'}`}>
+                              {rememberMe && <Check size={12} className="text-black" />}
+                           </button>
+                           <span className="text-xs text-gray-400">{t('rememberMe')}</span>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={async () => {
+                              const email = prompt('Enter your email address:');
+                              if (email && email.includes('@')) {
+                                 try {
+                                    await sendPasswordResetEmail(email);
+                                    alert(`Password reset link sent to ${email}. Check your email!`);
+                                 } catch (err: any) {
+                                    alert(err.message || 'Failed to send reset email.');
+                                 }
+                              } else if (email) {
+                                 alert('Please enter a valid email address.');
+                              }
+                           }}
+                           className="text-xs text-accentGreen hover:underline font-bold"
+                        >
+                           Forgot Password?
                         </button>
-                        <span className="text-xs text-gray-400">{t('rememberMe')}</span>
                      </div>
                   )}
 
