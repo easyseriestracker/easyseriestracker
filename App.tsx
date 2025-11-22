@@ -1870,11 +1870,11 @@ const Profile = () => {
    return (
       <div className="min-h-screen bg-[#14181c] relative">
          {/* Dynamic Background */}
-         <div className="absolute inset-0 h-[80vh] overflow-hidden pointer-events-none">
+         <div className="absolute inset-0 min-h-screen overflow-hidden pointer-events-none">
             {themeImage && (
                <>
-                  <div className="absolute inset-0 bg-cover bg-center opacity-95 scale-105" style={{ backgroundImage: `url(${themeImage})` }}></div>
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#14181c]/40 via-[#14181c]/70 to-[#14181c]"></div>
+                  <div className="absolute inset-0 bg-cover bg-top opacity-98 scale-105" style={{ backgroundImage: `url(${themeImage})` }}></div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14181c]/50 to-[#14181c]"></div>
                </>
             )}
          </div>
@@ -2699,8 +2699,8 @@ const Members = () => {
                      {/* Card Background */}
                      {memberTheme && (
                         <>
-                           <div className="absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
-                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/80 to-transparent"></div>
+                           <div className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
+                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/70 to-transparent"></div>
                         </>
                      )}
 
