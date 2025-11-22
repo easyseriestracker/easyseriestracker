@@ -536,12 +536,20 @@ const Home = () => {
             setSections(prev => {
                const trending = prev[0]; // Global Trending
                const rest = prev.slice(1); // Others
+               const existingTitles = prev.map(s => s.title);
+               const newSections = [];
+
+               // Add community sections if they don't already exist
+               if (commTop.length > 0 && !existingTitles.includes(t('communityTop'))) {
+                  newSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
+               }
+               if (commTrack.length > 0 && !existingTitles.includes(t('mostTracked'))) {
+                  newSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
+               }
 
                return [
                   trending,
-                  // Community sections go here
-                  ...(commTop.length > 0 ? [{ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true }] : []),
-                  ...(commTrack.length > 0 ? [{ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true }] : []),
+                  ...newSections,
                   ...rest
                ];
             });
@@ -560,12 +568,23 @@ const Home = () => {
             getSciFiShows()
          ]);
 
-         setSections(prev => [
-            ...prev,
-            { title: t('timelessClassics'), data: classics.slice(0, 6), link: "/browse?genre=18" },
-            { title: t('comedyGold'), data: comedy.slice(0, 6), link: "/browse?genre=35" },
-            { title: t('scifiAdventures'), data: scifi.slice(0, 6), link: "/browse?genre=10765" }
-         ]);
+         setSections(prev => {
+            // Check for duplicates by title to avoid adding same section twice
+            const existingTitles = prev.map(s => s.title);
+            const newSections = [];
+            
+            if (!existingTitles.includes(t('hallOfFame')) && classics.length > 0) {
+               newSections.push({ title: t('hallOfFame'), data: classics.slice(0, 6), link: "/browse?genre=18" });
+            }
+            if (!existingTitles.includes(t('sitcoms')) && comedy.length > 0) {
+               newSections.push({ title: t('sitcoms'), data: comedy.slice(0, 6), link: "/browse?genre=35" });
+            }
+            if (!existingTitles.includes(t('mindBenders')) && scifi.length > 0) {
+               newSections.push({ title: t('mindBenders'), data: scifi.slice(0, 6), link: "/browse?genre=10765" });
+            }
+            
+            return [...prev, ...newSections];
+         });
       };
       loadData();
    }, [t]);
@@ -2029,17 +2048,24 @@ const ShowPage = () => {
 
    const handleRate = async (r: number) => {
       if (!user) return navigate('/login');
+      if (!id) return;
+      
       try {
-         await rateShow(parseInt(id!), r);
+         await rateShow(parseInt(id), r);
          // Immediately update local state
          setUserRating(r);
-         // Refresh user data in background
-         refreshUser().then(() => {
-            // After refresh, sync userRating with updated user data
-            if (r === 0) {
-               setUserRating(0);
-            }
-         });
+         // Refresh user data and wait for it to complete
+         await refreshUser();
+         // Force update userRating after refresh
+         const updatedUser = await getCurrentUser();
+         if (updatedUser) {
+            const showId = parseInt(id);
+            const newRating = updatedUser.ratings[showId] || 0;
+            setUserRating(newRating);
+         } else {
+            // If no user, set to 0
+            setUserRating(0);
+         }
       } catch (error) {
          console.error('Error rating show:', error);
       }
