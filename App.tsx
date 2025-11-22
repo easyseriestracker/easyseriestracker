@@ -515,7 +515,13 @@ const Home = () => {
             }
             setSections([
                { title: t('globalTrending'), data: trending.slice(0, 6), link: "/browse?sort=popularity.desc" }
-   const commTopList = await getCommunityFavoriteIds();
+            ]);
+            setDataLoaded(true); // Show UI immediately
+         }
+
+         // 3. Load Community Data (Slower, requires DB + TMDB)
+         try {
+            const commTopList = await getCommunityFavoriteIds();
             const commTopIds = commTopList.slice(0, 6).map(x => x.id);
 
             const commTrackList = await getMostWatchlistedIds();
