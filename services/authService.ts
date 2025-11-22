@@ -615,33 +615,70 @@ export const deleteReview = async (reviewId: string) => {
 };
 
 export const likeReview = async (reviewId: string, userId: string) => {
-  const { data: review } = await supabase.from('reviews').select('likes').eq('id', reviewId).single();
-  if (!review) return;
+  try {
+    const { data: review, error } = await supabase
+      .from('reviews')
+      .select('likes')
+      .eq('id', reviewId)
+      .single();
+      
+    if (error) throw error;
+    if (!review) throw new Error('Review not found');
 
-  let likes = review.likes || [];
-  if (likes.includes(userId)) {
-    likes = likes.filter((id: string) => id !== userId);
-  } else {
-    likes.push(userId);
+    let likes = Array.isArray(review.likes) ? [...review.likes] : [];
+    const likeIndex = likes.indexOf(userId);
+    
+    if (likeIndex > -1) {
+      likes.splice(likeIndex, 1); // Remove like
+    } else {
+      likes.push(userId); // Add like
+    }
+
+    const { error: updateError } = await supabase
+      .from('reviews')
+      .update({ likes })
+      .eq('id', reviewId);
+      
+    if (updateError) throw updateError;
+    
+    return { likes };
+  } catch (error) {
+    console.error('Error in likeReview:', error);
+    throw error;
   }
-
-  await supabase.from('reviews').update({ likes }).eq('id', reviewId);
 };
 
 export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, 'id' | 'createdAt'>) => {
-  const { data: review } = await supabase.from('reviews').select('replies').eq('id', reviewId).single();
-  if (!review) return;
+  try {
+    const { data: review, error: fetchError } = await supabase
+      .from('reviews')
+      .select('replies')
+      .eq('id', reviewId)
+      .single();
+      
+    if (fetchError) throw fetchError;
+    if (!review) throw new Error('Review not found');
 
-  const newReply = {
-    ...reply,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString()
-  };
+    const newReply: ReviewReply = {
+      ...reply,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
 
-  const replies = review.replies || [];
-  replies.push(newReply);
+    const replies = Array.isArray(review.replies) ? [...review.replies, newReply] : [newReply];
 
-  await supabase.from('reviews').update({ replies }).eq('id', reviewId);
+    const { error: updateError } = await supabase
+      .from('reviews')
+      .update({ replies })
+      .eq('id', reviewId);
+      
+    if (updateError) throw updateError;
+    
+    return { replies };
+  } catch (error) {
+    console.error('Error in replyToReview:', error);
+    throw error;
+  }
 };
 
 export const deleteReply = async (reviewId: string, replyId: string) => {

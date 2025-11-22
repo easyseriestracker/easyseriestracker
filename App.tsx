@@ -1399,7 +1399,7 @@ const ReviewDetailPage = () => {
 
    const handleReply = async () => {
       if (!user) {
-         alert('Yanıt yazmak için giriş yapmalısınız');
+         alert('Please log in to reply');
          navigate('/login');
          return;
       }
@@ -1414,6 +1414,7 @@ const ReviewDetailPage = () => {
             content: replyContent.trim()
          });
          
+         // Refresh the review data
          const updated = await getReviewById(review.id);
          if (updated) {
             setReview(prev => prev ? ({ 
@@ -1434,8 +1435,8 @@ const ReviewDetailPage = () => {
          }, 100);
          
       } catch (error) {
-         console.error('Yanıt gönderilirken hata oluştu:', error);
-         alert('Yanıt gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
+         console.error('Error sending reply:', error);
+         alert('Failed to send reply. Please try again.');
       }
    };
 
@@ -1516,7 +1517,7 @@ const ReviewDetailPage = () => {
                      <button
                         onClick={async () => {
                            if (!user) {
-                              alert('Lütfen önce giriş yapın');
+                              alert('Please log in to like this review');
                               navigate('/login');
                               return;
                            }
@@ -1531,28 +1532,29 @@ const ReviewDetailPage = () => {
                                  }));
                               }
                            } catch (error) {
-                              console.error('Like işlemi sırasında hata oluştu:', error);
-                              alert('Like işlemi sırasında bir hata oluştu');
+                              console.error('Error liking review:', error);
+                              alert('Failed to like review. Please try again.');
                            }
                         }}
-                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition shadow-md hover:-translate-y-0.5 ${user && review.likes.includes(user.id) ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition shadow-md hover:-translate-y-0.5 ${user && review.likes?.includes(user.id) ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
                      >
-                        <Heart size={20} fill={user && review.likes.includes(user.id) ? "currentColor" : "none"} /> {review.likes.length} Beğeni
+                        <Heart size={20} fill={user && review.likes?.includes(user.id) ? "currentColor" : "none"} /> 
+                        {review.likes?.length || 0} {review.likes?.length === 1 ? 'Like' : 'Likes'}
                      </button>
                   </div>
 
                   {/* Replies */}
                   <div className="bg-black/30 rounded-xl p-6 border border-white/5">
-                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-6">Yanıtlar ({review.replies?.length || 0})</h3>
+                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-6">Replies ({review.replies?.length || 0})</h3>
                      <div className="flex gap-4 mb-8">
                         <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br ${user ? getAvatarColor(user.username) : 'from-gray-600 to-gray-800'} flex items-center justify-center text-white font-bold`}>
-                           {user ? (user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0]) : '?'}
+                           {user ? (user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.username} /> : user.username[0]) : '?'}
                         </div>
                         <div className="flex-1">
                            <input 
                               value={replyContent} 
                               onChange={e => setReplyContent(e.target.value)} 
-                              placeholder={user ? "Yanıtınızı yazın..." : "Yanıt yazmak için giriş yapın"} 
+                              placeholder={user ? "Write your reply..." : "Log in to reply"} 
                               className="w-full bg-transparent border-b border-white/20 focus:border-accentGreen outline-none text-white pb-2 text-sm transition disabled:opacity-50"
                               disabled={!user}
                               onKeyDown={async (e) => {
@@ -1567,7 +1569,12 @@ const ReviewDetailPage = () => {
                            <div className="flex justify-between items-center mt-2">
                               {!user && (
                                  <span className="text-xs text-gray-500">
-                                    Yanıt yazmak için <button onClick={() => navigate('/login')} className="text-accentGreen hover:underline">giriş yapın</button>
+                                    <button 
+                                       onClick={() => navigate('/login')} 
+                                       className="text-accentGreen hover:underline"
+                                    >
+                                       Log in
+                                    </button> to reply
                                  </span>
                               )}
                               <Button 
@@ -1576,7 +1583,7 @@ const ReviewDetailPage = () => {
                                  className="!py-1.5 !px-4 !text-xs font-bold ml-auto"
                                  disabled={!user || !replyContent.trim()}
                               >
-                                 Yanıtla
+                                 Reply
                               </Button>
                            </div>
                         </div>
