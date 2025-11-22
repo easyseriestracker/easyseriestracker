@@ -2871,6 +2871,7 @@ const AuthPage = () => {
    const [password, setPassword] = useState('');
    const [error, setError] = useState('');
    const [rememberMe, setRememberMe] = useState(false);
+   const [editBio, setEditBio] = useState('');
 
    const [bgIndex, setBgIndex] = useState(0);
    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
