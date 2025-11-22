@@ -392,14 +392,14 @@ const ShowCard = ({ show }: { show: Show }) => {
                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700 ease-out"
             />
 
-            {/* Quick Track Button (Top Right) */}
+            {/* Quick Track Button (Center on Hover) */}
             {user && (
                <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
-                  className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/60 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100`}
+                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/80 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100 hover:scale-110`}
                   title={isAdded ? "Untrack" : "Track"}
                >
-                  {isAdded ? <Check size={16} /> : <Plus size={16} />}
+                  {isAdded ? <Check size={20} /> : <Plus size={20} />}
                </button>
             )}
 
@@ -407,6 +407,29 @@ const ShowCard = ({ show }: { show: Show }) => {
             {userRating && (
                <div className="absolute top-2 left-2 bg-accentOrange text-black text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 z-20">
                   <Star size={8} fill="black" /> {userRating}
+               </div>
+            )}
+
+            {/* Quick Rate Inside Image at Bottom */}
+            {user && (
+               <div
+                  className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex justify-center gap-1.5 z-10"
+                  onClick={(e) => e.preventDefault()}
+                  onMouseLeave={() => setHoverRating(0)}
+               >
+                  {[1, 2, 3, 4, 5].map((star) => (
+                     <button
+                        key={star}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleQuickRate(star); }}
+                        onMouseEnter={() => setHoverRating(star)}
+                        className="transition-transform hover:scale-125 focus:outline-none"
+                     >
+                        <Star
+                           size={20}
+                           className={`${(hoverRating || userRating || 0) >= star ? 'text-accentOrange fill-accentOrange drop-shadow-[0_0_8px_rgba(255,153,0,0.8)]' : 'text-gray-600'}`}
+                        />
+                     </button>
+                  ))}
                </div>
             )}
          </Link>
@@ -423,25 +446,6 @@ const ShowCard = ({ show }: { show: Show }) => {
                   </div>
                </div>
             </div>
-
-            {/* Quick Rate Below Image */}
-            {user && (
-               <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1" onMouseLeave={() => setHoverRating(0)}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                     <button
-                        key={star}
-                        onClick={(e) => { e.preventDefault(); handleQuickRate(star); }}
-                        onMouseEnter={() => setHoverRating(star)}
-                        className="transition-transform hover:scale-110 focus:outline-none"
-                     >
-                        <Star
-                           size={18}
-                           className={`${(hoverRating || userRating || 0) >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-700'}`}
-                        />
-                     </button>
-                  ))}
-               </div>
-            )}
          </div>
       </div>
    );
@@ -843,11 +847,11 @@ const BrowsePage = () => {
                      onChange={(e) => setSearchParams({ sort: e.target.value, genre: genreParam })}
                      className="appearance-none bg-[#1f2329] text-white pl-5 pr-12 py-3 rounded-xl border border-white/10 focus:border-accentGreen focus:ring-1 focus:ring-accentGreen outline-none font-medium cursor-pointer hover:bg-[#2a2f38] transition-colors shadow-lg"
                   >
-                     <option value="popularity.desc">{t('mostPopular')}</option>
-                     <option value="vote_average.desc">{t('topRated')}</option>
-                     <option value="first_air_date.desc">{t('newest')}</option>
-                     <option value="site_rating">{t('communityFavs')}</option>
-                     <option value="site_pop">{t('mostWatchlisted')}</option>
+                     <option value="popularity.desc">Most Popular</option>
+                     <option value="vote_average.desc">Top Rated</option>
+                     <option value="first_air_date.desc">Newest</option>
+                     <option value="site_rating">Community Favs</option>
+                     <option value="site_pop">Most Watchlisted</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-accentGreen transition-colors" size={20} />
                </div>
@@ -1864,6 +1868,22 @@ const ShowPage = () => {
                      </div>
                      <div className="text-sm font-medium text-gray-300">{userRating > 0 ? `${userRating}/5` : 'Rate this show'}</div>
                   </div>
+
+                  {/* Watch Providers */}
+                  <div className="bg-[#1f2329]/80 backdrop-blur-md p-5 rounded-xl border border-white/10">
+                     <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">Where to Watch</div>
+                     <div className="text-center">
+                        <a
+                           href={`https://www.justwatch.com/us/tv-show/${show.name.toLowerCase().replace(/ /g, '-')}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="inline-flex items-center gap-2 text-sm font-bold text-accentGreen hover:text-white transition-colors group"
+                        >
+                           <Globe size={16} className="group-hover:rotate-12 transition-transform" />
+                           Find Streaming Services →
+                        </a>
+                     </div>
+                  </div>
                </div>
 
                {/* Main Info (Right) */}
@@ -2059,6 +2079,93 @@ const Tracking = () => {
    );
 }
 
+const Home = () => {
+   const [trendingShows, setTrendingShows] = useState<Show[]>([]);
+   const { user, refreshUser } = useContext(AuthContext);
+   const { t } = useTranslation();
+   const [showRatingReminder, setShowRatingReminder] = useState(false);
+   const [reminderShow, setReminderShow] = useState<ShowDetails | null>(null);
+   const [reminderRating, setReminderRating] = useState(0);
+   const navigate = useNavigate();
+
+   useEffect(() => {
+      getTrendingShows().then(setTrendingShows);
+   }, []);
+
+   useEffect(() => {
+      // Rating reminder logic: show every 2nd visit
+      if (user && user.watchlist.length > 0) {
+         const visitCount = parseInt(localStorage.getItem('visitCount') || '0');
+         const newVisitCount = visitCount + 1;
+         localStorage.setItem('visitCount', newVisitCount.toString());
+
+         // Show reminder every 2nd visit
+         if (newVisitCount % 2 === 0) {
+            // Pick random unrated show from watchlist
+            const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
+            if (unratedShows.length > 0) {
+               const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
+               getShowDetails(randomShow.showId).then(show => {
+                  setReminderShow(show);
+                  setShowRatingReminder(true);
+               });
+            }
+         }
+      }
+   }, [user]);
+
+   const handleReminderRate = async (rating: number) => {
+      if (reminderShow && user) {
+         await rateShow(reminderShow.id, rating);
+         await refreshUser();
+         setShowRatingReminder(false);
+         setReminderShow(null);
+      }
+   };
+
+   return (
+      <div className="pt-32 px-6 max-w-7xl mx-auto min-h-screen">
+         <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-12 text-glow">{t('community')}</h1>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {members.map(m => (
+               <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
+                  <div className="flex items-center gap-4 mb-6">
+                     <div className={`w-16 h-16 rounded-full border-2 border-white/10 group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl`}>
+                        {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
+                     </div>
+                     <div>
+                        <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
+                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
+                     </div>
+                  </div>
+
+                  {/* Mini Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-6 border-t border-white/5 pt-4">
+                     <div className="text-center">
+                        <div className="text-lg font-black text-white">{m.watchlist.length}</div>
+                        <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
+                     </div>
+                     <div className="text-center">
+                        <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
+                        <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
+                     </div>
+                  </div>
+
+                  {/* Favorites Preview */}
+                  <div className="flex gap-2 justify-center">
+                     {m.topFavorites.slice(0, 3).map((s, i) => (
+                        <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
+                           <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" />
+                        </div>
+                     ))}
+                  </div>
+               </Link>
+            ))}
+         </div>
+      </div>
+   );
+};
+
 const Members = () => {
    const [members, setMembers] = useState<User[]>([]);
    const { t } = useTranslation();
@@ -2133,6 +2240,10 @@ const AuthPage = () => {
       'https://image.tmdb.org/t/p/original/q8eejQcg1bAqImEV8jh8RtBD4uH.jpg', // Arcane
       'https://image.tmdb.org/t/p/original/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg', // Breaking Bad
    ];
+
+   useEffect(() => {
+      setIsLogin(location.pathname === '/login');
+   }, [location.pathname]);
 
    useEffect(() => {
       const interval = setInterval(() => {
@@ -2256,11 +2367,11 @@ const AuthPage = () => {
                <div className="mt-6 text-center pt-4 border-t border-white/10">
                   {isLogin ? (
                      <p className="text-xs text-gray-400">
-                        {t('dontHaveAccount')} <button onClick={() => setIsLogin(false)} className="text-white font-bold hover:text-accentGreen underline decoration-accentGreen/50 hover:decoration-accentGreen transition">{t('joinNow')}</button>
+                        {t('dontHaveAccount')} <button onClick={() => navigate('/register')} className="text-white font-bold hover:text-accentGreen underline decoration-accentGreen/50 hover:decoration-accentGreen transition">{t('joinNow')}</button>
                      </p>
                   ) : (
                      <p className="text-xs text-gray-400">
-                        {t('alreadyHaveAccount')} <button onClick={() => setIsLogin(true)} className="text-white font-bold hover:text-accentGreen underline decoration-accentGreen/50 hover:decoration-accentGreen transition">{t('login')}</button>
+                        {t('alreadyHaveAccount')} <button onClick={() => navigate('/login')} className="text-white font-bold hover:text-accentGreen underline decoration-accentGreen/50 hover:decoration-accentGreen transition">{t('login')}</button>
                      </p>
                   )}
                </div>
