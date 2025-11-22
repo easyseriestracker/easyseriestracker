@@ -616,3 +616,67 @@ export const getMostWatchlistedIds = async (): Promise<{ id: number, count: numb
     .map(x => ({ id: parseInt(x[0]), count: x[1] }));
 };
 
+// --- SUGGESTIONS SYSTEM ---
+
+const ADMIN_USER_ID = '9f05df16-4a02-46cc-a45c-e0ad1aa53892'; // Admin user ID for receiving suggestions
+
+export interface Suggestion {
+  id: string;
+  fromUserId: string | null;
+  fromUsername: string | null;
+  message: string;
+  createdAt: string;
+}
+
+export const submitSuggestion = async (message: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Must be logged in to submit suggestions');
+
+  // Get username from profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single();
+
+  const { error } = await supabase
+    .from('suggestions')
+    .insert({
+      from_user_id: user.id,
+      from_username: profile?.username || user.email?.split('@')[0] || 'Anonymous',
+      to_user_id: ADMIN_USER_ID,
+      message: message.trim()
+    });
+
+  if (error) throw error;
+};
+
+export const getSuggestions = async (): Promise<Suggestion[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Only admin can see suggestions
+  if (user.id !== ADMIN_USER_ID) return [];
+
+  const { data, error } = await supabase
+    .from('suggestions')
+    .select('*')
+    .eq('to_user_id', ADMIN_USER_ID)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching suggestions:', error);
+    return [];
+  }
+
+  if (!data) return [];
+
+  return data.map(s => ({
+    id: s.id,
+    fromUserId: s.from_user_id,
+    fromUsername: s.from_username,
+    message: s.message,
+    createdAt: s.created_at
+  }));
+};
+

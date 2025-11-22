@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, Suggestion } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -501,6 +501,8 @@ const Home = () => {
    const [reminderRating, setReminderRating] = useState(0);
    const hasShownReminderRef = useRef(false);
    const [communityLists, setCommunityLists] = useState<UserList[]>([]);
+   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+   const [suggestionText, setSuggestionText] = useState('');
    const { t } = useTranslation();
 
    useEffect(() => {
@@ -927,6 +929,75 @@ const Home = () => {
                            Rate Show
                         </button>
                      </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
+         {/* Suggestion Floating Button - Bottom Right */}
+         {user && (
+            <button
+               onClick={() => setShowSuggestionModal(true)}
+               className="fixed bottom-8 right-8 z-50 bg-accentGreen hover:bg-accentGreen/80 text-black rounded-full p-4 shadow-2xl hover:shadow-accentGreen/50 transition-all duration-300 hover:scale-110 flex items-center gap-2 group"
+               title="Öneride Bulun"
+            >
+               <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
+               <span className="font-black text-sm uppercase tracking-tighter hidden md:block">Öneride Bulun</span>
+            </button>
+         )}
+
+         {/* Suggestion Modal */}
+         {showSuggestionModal && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+               <div className="bg-[#1f2329] rounded-2xl border border-white/10 p-6 max-w-lg w-full shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Öneride Bulun</h2>
+                     <button
+                        onClick={() => {
+                           setShowSuggestionModal(false);
+                           setSuggestionText('');
+                        }}
+                        className="text-gray-400 hover:text-white transition"
+                     >
+                        <X size={24} />
+                     </button>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">Site için önerilerinizi paylaşın. Geri bildiriminiz bizim için çok değerli!</p>
+                  <textarea
+                     value={suggestionText}
+                     onChange={(e) => setSuggestionText(e.target.value)}
+                     placeholder="Önerilerinizi buraya yazın..."
+                     className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen resize-none h-32 mb-4"
+                  />
+                  <div className="flex gap-3">
+                     <button
+                        onClick={() => {
+                           setShowSuggestionModal(false);
+                           setSuggestionText('');
+                        }}
+                        className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white transition"
+                     >
+                        İptal
+                     </button>
+                     <button
+                        onClick={async () => {
+                           if (!suggestionText.trim()) {
+                              alert('Lütfen bir öneri yazın.');
+                              return;
+                           }
+                           try {
+                              await submitSuggestion(suggestionText);
+                              alert('Öneriniz gönderildi! Teşekkürler.');
+                              setShowSuggestionModal(false);
+                              setSuggestionText('');
+                           } catch (error: any) {
+                              alert('Öneri gönderilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+                           }
+                        }}
+                        className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition"
+                     >
+                        Gönder
+                     </button>
                   </div>
                </div>
             </div>
@@ -1468,6 +1539,8 @@ const Profile = () => {
    const [showSettings, setShowSettings] = useState(false);
    const [showFavSearchModal, setShowFavSearchModal] = useState(false);
    const [showCreateListModal, setShowCreateListModal] = useState(false);
+   const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
    const [newListName, setNewListName] = useState('');
    const [newListDesc, setNewListDesc] = useState('');
    const [profileUser, setProfileUser] = useState<User | null>(null);
@@ -1684,6 +1757,18 @@ const Profile = () => {
             </div>
             {isOwnProfile && (
                <div className="flex gap-3 mb-4">
+                  {currentUser && currentUser.id === '9f05df16-4a02-46cc-a45c-e0ad1aa53892' && (
+                     <Button 
+                        variant="secondary" 
+                        onClick={async () => {
+                           setShowSuggestionsModal(true);
+                           const suggs = await getSuggestions();
+                           setSuggestions(suggs);
+                        }}
+                     >
+                        <Bell size={16} /> Gelen Öneriler {suggestions.length > 0 && `(${suggestions.length})`}
+                     </Button>
+                  )}
                   <Button variant="secondary" onClick={() => setShowEditProfile(true)}><Edit2 size={16} /> {t('editProfile')}</Button>
                   <Button variant="secondary" onClick={() => setShowSettings(true)}><Settings size={16} /></Button>
                   <Button variant="danger" onClick={handleLogout}><LogOut size={16} /></Button>
@@ -2005,6 +2090,33 @@ const Profile = () => {
                         <span className="font-bold text-white text-sm">{s.name}</span>
                      </button>
                   ))}
+               </div>
+            </Modal>
+         )}
+
+         {showSuggestionsModal && (
+            <Modal title="Gelen Öneriler" onClose={() => setShowSuggestionsModal(false)}>
+               <div className="max-h-[60vh] overflow-y-auto space-y-4">
+                  {suggestions.length === 0 ? (
+                     <div className="text-center text-gray-500 py-8">Henüz öneri yok.</div>
+                  ) : (
+                     suggestions.map(s => (
+                        <div key={s.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                           <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                                    {s.fromUsername?.[0]?.toUpperCase() || '?'}
+                                 </div>
+                                 <span className="font-bold text-white">{s.fromUsername || 'Anonim'}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                 {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                           </div>
+                           <p className="text-gray-300 text-sm whitespace-pre-wrap">{s.message}</p>
+                        </div>
+                     ))
+                  )}
                </div>
             </Modal>
          )}

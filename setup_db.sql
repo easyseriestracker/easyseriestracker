@@ -165,3 +165,23 @@ create policy "Users can update own reviews."
 create policy "Users can delete own reviews."
   on reviews for delete
   using ( auth.uid() = user_id );
+
+-- SUGGESTIONS TABLE
+create table public.suggestions (
+  id uuid default uuid_generate_v4() primary key,
+  from_user_id uuid references public.profiles(id),
+  from_username text,
+  to_user_id uuid not null, -- Admin/owner user ID
+  message text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.suggestions enable row level security;
+
+create policy "Users can view suggestions sent to them."
+  on suggestions for select
+  using ( auth.uid() = to_user_id );
+
+create policy "Authenticated users can create suggestions."
+  on suggestions for insert
+  with check ( auth.uid() = from_user_id );
