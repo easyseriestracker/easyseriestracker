@@ -942,7 +942,7 @@ const Home = () => {
                title="Öneride Bulun"
             >
                <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
-               <span className="font-black text-sm uppercase tracking-tighter hidden md:block">Öneride Bulun</span>
+               <span className="font-black text-sm uppercase tracking-tighter hidden md:block">Suggest</span>
             </button>
          )}
 
@@ -962,11 +962,11 @@ const Home = () => {
                         <X size={24} />
                      </button>
                   </div>
-                  <p className="text-gray-400 text-sm mb-4">Site için önerilerinizi paylaşın. Geri bildiriminiz bizim için çok değerli!</p>
+                  <p className="text-gray-400 text-sm mb-4">Share your suggestions for the site. Your feedback is very valuable to us!</p>
                   <textarea
                      value={suggestionText}
                      onChange={(e) => setSuggestionText(e.target.value)}
-                     placeholder="Önerilerinizi buraya yazın..."
+                     placeholder="Write your suggestions here..."
                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen resize-none h-32 mb-4"
                   />
                   <div className="flex gap-3">
@@ -982,16 +982,20 @@ const Home = () => {
                      <button
                         onClick={async () => {
                            if (!suggestionText.trim()) {
-                              alert('Lütfen bir öneri yazın.');
+                              alert('Please write a suggestion.');
                               return;
                            }
                            try {
                               await submitSuggestion(suggestionText);
-                              alert('Öneriniz gönderildi! Teşekkürler.');
+                              alert('Your suggestion has been sent! Thank you.');
                               setShowSuggestionModal(false);
                               setSuggestionText('');
                            } catch (error: any) {
-                              alert('Öneri gönderilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
+                              if (error.message?.includes('suggestions')) {
+                                 alert('The suggestions table has not been created yet. Please run the SQL in setup_db.sql on your Supabase dashboard.');
+                              } else {
+                                 alert('An error occurred while sending the suggestion: ' + (error.message || 'Unknown error'));
+                              }
                            }
                         }}
                         className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition"
@@ -1739,56 +1743,56 @@ const Profile = () => {
    return (
       <div className="pt-32 px-6 max-w-6xl mx-auto min-h-screen relative z-10">
          {/* Header */}
-         <div className="flex flex-col md:flex-row items-end gap-8 mb-12">
-            <div className={`w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-accentGreen/20 bg-[#1f2329] shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${getAvatarColor(profileUser.username)}`}>
+         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-8 md:mb-12">
+            <div className={`w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full border-4 border-accentGreen/20 bg-[#1f2329] shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${getAvatarColor(profileUser.username)}`}>
                {profileUser.avatar ? <img src={profileUser.avatar} className="w-full h-full object-cover" /> : (
-                  <div className="text-5xl font-black text-white">
+                  <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white">
                      {profileUser.username.charAt(0).toUpperCase()}
                   </div>
                )}
             </div>
-            <div className="flex-1 mb-2">
-
-               <h1 className="text-4xl font-black text-white mb-2 tracking-tight drop-shadow-lg text-shadow">{profileUser.username}</h1>
-               <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="flex-1 mb-2 text-center md:text-left w-full">
+               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 tracking-tight drop-shadow-lg text-shadow">{profileUser.username}</h1>
+               <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center justify-center md:justify-start gap-2">
                   <Calendar size={12} /> Member since {new Date(profileUser.joinedAt).toLocaleDateString()}
                </div>
-               {profileUser.bio && <p className="text-gray-300 text-lg font-medium max-w-2xl text-shadow">{profileUser.bio}</p>}
+               {profileUser.bio && <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium max-w-2xl text-shadow mx-auto md:mx-0">{profileUser.bio}</p>}
             </div>
             {isOwnProfile && (
-               <div className="flex gap-3 mb-4">
+               <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 justify-center md:justify-start w-full md:w-auto">
                   {currentUser && currentUser.id === '9f05df16-4a02-46cc-a45c-e0ad1aa53892' && (
                      <Button 
                         variant="secondary" 
+                        className="!text-xs sm:!text-sm"
                         onClick={async () => {
                            setShowSuggestionsModal(true);
                            const suggs = await getSuggestions();
                            setSuggestions(suggs);
                         }}
                      >
-                        <Bell size={16} /> Gelen Öneriler {suggestions.length > 0 && `(${suggestions.length})`}
+                        <Bell size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Suggestions</span> {suggestions.length > 0 && `(${suggestions.length})`}
                      </Button>
                   )}
-                  <Button variant="secondary" onClick={() => setShowEditProfile(true)}><Edit2 size={16} /> {t('editProfile')}</Button>
-                  <Button variant="secondary" onClick={() => setShowSettings(true)}><Settings size={16} /></Button>
-                  <Button variant="danger" onClick={handleLogout}><LogOut size={16} /></Button>
+                  <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowEditProfile(true)}><Edit2 size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('editProfile')}</span></Button>
+                  <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowSettings(true)}><Settings size={14} className="sm:w-4 sm:h-4" /></Button>
+                  <Button variant="danger" className="!text-xs sm:!text-sm" onClick={handleLogout}><LogOut size={14} className="sm:w-4 sm:h-4" /></Button>
                </div>
             )}
          </div>
 
          {/* Modern Tab Navigation */}
-         <div className="flex flex-wrap gap-3 mb-10 pb-6">
+         <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-10 pb-4 sm:pb-6 overflow-x-auto">
             {[
-               { id: 'overview', label: t('overview'), count: null, icon: <Eye size={18} /> },
-               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={18} /> },
-               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={18} /> },
-               { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={18} /> },
-               { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={18} /> },
+               { id: 'overview', label: t('overview'), count: null, icon: <Eye size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+               { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+               { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" /> },
             ].map(tab => (
                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`group relative px-5 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all duration-200 ${activeTab === tab.id
+                  className={`group relative px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 flex-shrink-0 ${activeTab === tab.id
                      ? 'bg-accentGreen text-black shadow-xl shadow-accentGreen/40 scale-105'
                      : 'bg-gradient-to-br from-white/10 to-white/5 text-gray-200 border border-white/20 hover:border-accentGreen/60 hover:from-white/15 hover:to-white/10 hover:text-white hover:shadow-lg'
                      }`}
@@ -2095,10 +2099,10 @@ const Profile = () => {
          )}
 
          {showSuggestionsModal && (
-            <Modal title="Gelen Öneriler" onClose={() => setShowSuggestionsModal(false)}>
+            <Modal title="Suggestions" onClose={() => setShowSuggestionsModal(false)}>
                <div className="max-h-[60vh] overflow-y-auto space-y-4">
                   {suggestions.length === 0 ? (
-                     <div className="text-center text-gray-500 py-8">Henüz öneri yok.</div>
+                     <div className="text-center text-gray-500 py-8">No suggestions yet.</div>
                   ) : (
                      suggestions.map(s => (
                         <div key={s.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
@@ -2107,7 +2111,7 @@ const Profile = () => {
                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
                                     {s.fromUsername?.[0]?.toUpperCase() || '?'}
                                  </div>
-                                 <span className="font-bold text-white">{s.fromUsername || 'Anonim'}</span>
+                                 <span className="font-bold text-white">{s.fromUsername || 'Anonymous'}</span>
                               </div>
                               <span className="text-xs text-gray-500">
                                  {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -2542,9 +2546,9 @@ const Members = () => {
    }, []);
 
    return (
-      <div className="pt-32 px-6 max-w-7xl mx-auto min-h-screen">
-         <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-12 text-glow">{t('community')}</h1>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="pt-20 md:pt-32 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
+         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 text-glow text-center sm:text-left">{t('community')}</h1>
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {members.map(m => (
                <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
                   <div className="flex items-center gap-4 mb-6">
@@ -2558,7 +2562,7 @@ const Members = () => {
                   </div>
 
                   {/* Mini Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-6 border-t border-white/5 pt-4">
+                  <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">
                      <div className="text-center">
                         <div className="text-lg font-black text-white">{m.watchlist.length}</div>
                         <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
@@ -2566,6 +2570,10 @@ const Members = () => {
                      <div className="text-center">
                         <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
                         <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
+                     </div>
+                     <div className="text-center">
+                        <div className="text-lg font-black text-white">{m.lists.length}</div>
+                        <div className="text-[10px] font-bold uppercase text-gray-600">Lists</div>
                      </div>
                   </div>
 

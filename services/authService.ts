@@ -264,7 +264,7 @@ export const logout = async () => {
 export const getAllMembers = async (): Promise<User[]> => {
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('*, watchlists(count), ratings(count)')
+    .select('*, watchlists(count), ratings(count), lists(count)')
     .limit(50);
 
   if (error) {
@@ -273,6 +273,35 @@ export const getAllMembers = async (): Promise<User[]> => {
   }
 
   if (!profiles) return [];
+
+  // Fetch all lists for all users in parallel
+  const userIds = profiles.map((p: any) => p.id);
+  const { data: allLists } = await supabase
+    .from('lists')
+    .select('*')
+    .in('user_id', userIds);
+
+  // Group lists by user_id
+  const listsByUserId: Record<string, any[]> = {};
+  if (allLists) {
+    allLists.forEach((list: any) => {
+      if (!listsByUserId[list.user_id]) {
+        listsByUserId[list.user_id] = [];
+      }
+      listsByUserId[list.user_id].push({
+        id: list.id,
+        userId: list.user_id,
+        username: list.username,
+        name: list.name,
+        description: list.description,
+        isPrivate: list.is_private,
+        items: list.items || [],
+        likes: list.likes || [],
+        comments: list.comments || [],
+        createdAt: list.created_at
+      });
+    });
+  }
 
   return profiles.map((p: any) => {
     const user = transformProfileToUser(p, null);
@@ -289,6 +318,9 @@ export const getAllMembers = async (): Promise<User[]> => {
     for (let i = 0; i < ratingsCount; i++) {
       user.ratings[i] = 0;
     }
+
+    // Set actual lists for the user
+    user.lists = listsByUserId[p.id] || [];
 
     return user;
   });
