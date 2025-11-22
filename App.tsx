@@ -3,10 +3,10 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
-import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
+import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronDown, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
 import Turnstile from 'react-turnstile';
 
 // --- TRANSLATIONS ---
@@ -367,6 +367,7 @@ const ShowCard = ({ show }: { show: Show }) => {
    const { t } = useTranslation();
    const isAdded = user?.watchlist.some(w => w.showId === show.id);
    const userRating = user?.ratings?.[show.id];
+   const [hoverRating, setHoverRating] = useState(0);
 
    const toggleTrack = async () => {
       if (!user) return;
@@ -388,64 +389,59 @@ const ShowCard = ({ show }: { show: Show }) => {
                src={getImageUrl(show.poster_path)}
                alt={show.name}
                loading="lazy"
-               className="w-full h-full object-cover opacity-90 group-hover:opacity-40 transition-all duration-700 ease-out"
+               className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700 ease-out"
             />
-            {/* Hover Overlay - Quick Track & Rate */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 gap-4 p-4 bg-black/80 backdrop-blur-[2px]">
-               {user ? (
-                  <>
-                     <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${isAdded ? 'bg-red-500 text-white' : 'bg-accentGreen text-black'}`}
-                        title={isAdded ? "Untrack" : "Track"}
-                     >
-                        {isAdded ? <X size={24} /> : <Plus size={24} />}
-                     </button>
 
-                     <div className="flex flex-col items-center gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Quick Rate</span>
-                        <div className="flex gap-1">
-                           {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                 key={star}
-                                 onClick={() => handleQuickRate(star)}
-                                 className="transition-transform hover:scale-125"
-                              >
-                                 <Star
-                                    size={16}
-                                    className={`${(userRating || 0) >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-600 hover:text-accentOrange'}`}
-                                 />
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-                  </>
-               ) : (
-                  <div className="bg-black/80 text-white text-[10px] font-bold uppercase px-2 py-1 rounded">Log in to track</div>
-               )}
-            </div>
+            {/* Quick Track Button (Top Right) */}
+            {user && (
+               <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
+                  className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/60 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100`}
+                  title={isAdded ? "Untrack" : "Track"}
+               >
+                  {isAdded ? <Check size={16} /> : <Plus size={16} />}
+               </button>
+            )}
 
             {/* Badges */}
-            {isAdded && (
-               <div className="absolute top-2 right-2 bg-accentGreen text-black text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-lg z-20">
-                  {t('inWatchlist')}
-               </div>
-            )}
             {userRating && (
                <div className="absolute top-2 left-2 bg-accentOrange text-black text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 z-20">
                   <Star size={8} fill="black" /> {userRating}
                </div>
             )}
          </Link>
+
          <div className="mt-3 px-1 group-hover:translate-x-1 transition-transform duration-300">
             <Link to={`/show/${show.id}`} className="font-bold text-sm text-gray-100 leading-tight truncate group-hover:text-accentGreen transition-colors block">{show.name}</Link>
-            <div className="flex items-center gap-2 mt-1">
-               <span className="text-[10px] font-medium text-gray-500">{show.first_air_date?.split('-')[0]}</span>
-               <div className="flex items-center gap-1 bg-white/5 px-1 py-0.5 rounded">
-                  <Star size={8} className="text-accentOrange fill-accentOrange" />
-                  <span className="text-[10px] font-bold text-gray-300">{show.vote_average?.toFixed(1)}</span>
+
+            <div className="flex items-center justify-between mt-2">
+               <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-gray-500">{show.first_air_date?.split('-')[0]}</span>
+                  <div className="flex items-center gap-1 bg-white/5 px-1 py-0.5 rounded">
+                     <Star size={8} className="text-accentOrange fill-accentOrange" />
+                     <span className="text-[10px] font-bold text-gray-300">{show.vote_average?.toFixed(1)}</span>
+                  </div>
                </div>
             </div>
+
+            {/* Quick Rate Below Image */}
+            {user && (
+               <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-1" onMouseLeave={() => setHoverRating(0)}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                     <button
+                        key={star}
+                        onClick={(e) => { e.preventDefault(); handleQuickRate(star); }}
+                        onMouseEnter={() => setHoverRating(star)}
+                        className="transition-transform hover:scale-110 focus:outline-none"
+                     >
+                        <Star
+                           size={18}
+                           className={`${(hoverRating || userRating || 0) >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-700'}`}
+                        />
+                     </button>
+                  ))}
+               </div>
+            )}
          </div>
       </div>
    );
@@ -830,123 +826,134 @@ const BrowsePage = () => {
    };
 
    return (
-      <div className="pt-32 px-6 max-w-[1400px] mx-auto min-h-screen">
-         <div className="flex flex-col gap-8 mb-10">
-            <h1 className="text-5xl font-black text-white uppercase tracking-tighter text-glow">{t('discoverShows')}</h1>
+      <div className="pt-32 px-6 max-w-[1600px] mx-auto min-h-screen">
+         <div className="flex flex-col gap-8 mb-12">
+            <div className="flex flex-col md:flex-row items-end justify-between gap-6">
+               <div>
+                  <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-2">
+                     Discover <span className="text-transparent bg-clip-text bg-gradient-to-r from-accentGreen to-emerald-600">Shows</span>
+                  </h1>
+                  <p className="text-gray-400 text-lg">Find your next obsession among thousands of series.</p>
+               </div>
 
-            {/* Main Filters Container */}
-            <div className="bg-[#1f2329] p-6 rounded-3xl border border-white/10 shadow-2xl">
+               {/* Sort Dropdown - Modernized */}
+               <div className="relative group z-30">
+                  <select
+                     value={sort}
+                     onChange={(e) => setSearchParams({ sort: e.target.value, genre: genreParam })}
+                     className="appearance-none bg-[#1f2329] text-white pl-5 pr-12 py-3 rounded-xl border border-white/10 focus:border-accentGreen focus:ring-1 focus:ring-accentGreen outline-none font-medium cursor-pointer hover:bg-[#2a2f38] transition-colors shadow-lg"
+                  >
+                     <option value="popularity.desc">{t('mostPopular')}</option>
+                     <option value="vote_average.desc">{t('topRated')}</option>
+                     <option value="first_air_date.desc">{t('newest')}</option>
+                     <option value="site_rating">{t('communityFavs')}</option>
+                     <option value="site_pop">{t('mostWatchlisted')}</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-accentGreen transition-colors" size={20} />
+               </div>
+            </div>
 
-               {/* Top Row: Sort & Advanced Filters */}
-               <div className="flex flex-wrap items-center gap-4 mb-6 border-b border-white/5 pb-6">
-                  {/* Sort Options */}
-                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                     {[
-                        { id: 'popularity.desc', label: 'Popularity' },
-                        { id: 'vote_average.desc', label: 'Rating High' },
-                        { id: 'vote_average.asc', label: 'Rating Low' },
-                        { id: 'first_air_date.desc', label: 'Newest' },
-                        { id: 'site_rating', label: 'Site Score' },
-                     ].map(opt => (
-                        <button
-                           key={opt.id}
-                           onClick={() => updateFilter('sort', opt.id)}
-                           className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition border ${sort === opt.id ? 'bg-white text-black border-white' : 'bg-black/40 text-gray-400 border-transparent hover:text-white'}`}
-                        >
-                           {opt.label}
-                        </button>
-                     ))}
-                  </div>
+            {/* Filters Container */}
+            <div className="bg-[#14181c]/80 backdrop-blur-xl p-6 rounded-3xl border border-white/5 shadow-2xl space-y-6">
 
-                  <div className="w-px h-8 bg-white/10 hidden md:block" />
-
-                  {/* Advanced Filters */}
-                  <div className="flex gap-4 flex-wrap">
-                     <select
+               {/* Advanced Filters Row */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Year Filter */}
+                  <div className="relative">
+                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Release Year</label>
+                     <input
+                        type="number"
+                        placeholder="Any Year"
                         value={yearParam}
                         onChange={(e) => updateFilter('year', e.target.value)}
-                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
-                     >
-                        <option value="">Year: All</option>
-                        {Array.from({ length: 76 }, (_, i) => 2025 - i).map(y => (
-                           <option key={y} value={y}>{y}</option>
-                        ))}
-                     </select>
+                        className="w-full bg-[#0a0c0f] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:border-accentGreen outline-none transition-colors"
+                     />
+                  </div>
 
+                  {/* Status Filter */}
+                  <div className="relative">
+                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Status</label>
                      <select
                         value={statusParam}
                         onChange={(e) => updateFilter('status', e.target.value)}
-                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
+                        className="w-full bg-[#0a0c0f] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer transition-colors"
                      >
-                        <option value="">Status: All</option>
+                        <option value="">All Statuses</option>
                         <option value="0">Returning Series</option>
+                        <option value="1">Planned</option>
+                        <option value="2">In Production</option>
                         <option value="3">Ended</option>
                         <option value="4">Canceled</option>
                         <option value="5">Pilot</option>
                      </select>
+                     <ChevronDown className="absolute right-3 bottom-3 text-gray-500 pointer-events-none" size={16} />
+                  </div>
 
+                  {/* Language Filter */}
+                  <div className="relative">
+                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Language</label>
                      <select
                         value={langParam}
                         onChange={(e) => updateFilter('lang', e.target.value)}
-                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
+                        className="w-full bg-[#0a0c0f] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer transition-colors"
                      >
-                        <option value="">Language: All</option>
+                        <option value="">All Languages</option>
                         <option value="en">English</option>
-                        <option value="ja">Japanese</option>
                         <option value="ko">Korean</option>
+                        <option value="ja">Japanese</option>
                         <option value="es">Spanish</option>
                         <option value="fr">French</option>
                         <option value="de">German</option>
                         <option value="tr">Turkish</option>
                      </select>
+                     <ChevronDown className="absolute right-3 bottom-3 text-gray-500 pointer-events-none" size={16} />
                   </div>
                </div>
 
-               {/* Genre Cloud */}
+               {/* Genres Grid */}
                <div>
-                  <div className="flex justify-between items-center mb-3">
-                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest">Filter by Genre</h3>
-                     <button
-                        onClick={() => setSearchParams({ sort })}
-                        className="text-[10px] font-bold uppercase text-red-500 hover:text-red-400 transition"
-                     >
-                        Reset All
-                     </button>
-                  </div>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 block">Genres (Click to Include, Click again to Exclude)</label>
                   <div className="flex flex-wrap gap-2">
                      {genres.map(g => {
                         const state = getGenreState(g.id);
-                        let style = 'bg-black/40 text-gray-400 hover:text-white border-transparent';
-                        if (state === 'selected') style = 'bg-accentGreen text-black border-accentGreen shadow-[0_0_15px_rgba(0,224,84,0.3)]';
-                        if (state === 'excluded') style = 'bg-red-500/10 text-red-500 border-red-500/30 line-through decoration-2 opacity-70';
-
                         return (
                            <button
                               key={g.id}
                               onClick={() => toggleGenre(g.id)}
-                              className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition border ${style}`}
+                              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${state === 'selected'
+                                 ? 'bg-accentGreen text-black border-accentGreen shadow-[0_0_15px_rgba(0,224,84,0.3)]'
+                                 : state === 'excluded'
+                                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
+                                    : 'bg-[#1f2329] text-gray-400 border-white/5 hover:border-white/20 hover:text-white'
+                                 }`}
                            >
+                              {state === 'excluded' && <span className="mr-1">✕</span>}
+                              {state === 'selected' && <span className="mr-1">✓</span>}
                               {g.label}
                            </button>
                         );
                      })}
                   </div>
-                  <div className="mt-3 text-[10px] text-gray-600 font-medium italic">
-                     * Click once to <span className="text-accentGreen">include</span>, twice to <span className="text-red-500">exclude</span>.
-                  </div>
                </div>
             </div>
          </div>
 
-         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-10">
-            {shows.map((s, i) => {
+         {/* Shows Grid */}
+         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 pb-20">
+            {shows.map((show, i) => {
                if (shows.length === i + 1) {
-                  return <div ref={lastShowElementRef} key={`${s.id}-${i}`}><ShowCard show={s} /></div>;
+                  return <div ref={lastShowElementRef} key={show.id} className="animate-in fade-in zoom-in duration-500"><ShowCard show={show} /></div>;
+               } else {
+                  return <div key={show.id} className="animate-in fade-in zoom-in duration-500"><ShowCard show={show} /></div>;
                }
-               return <div key={`${s.id}-${i}`}><ShowCard show={s} /></div>;
             })}
          </div>
-         {loading && <div className="text-center py-10 text-accentGreen font-bold animate-pulse">LOADING DATA...</div>}
+
+         {loading && (
+            <div className="flex justify-center py-10">
+               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accentGreen"></div>
+            </div>
+         )}
       </div>
    );
 };
@@ -1197,6 +1204,7 @@ const Profile = () => {
    const [editAvatar, setEditAvatar] = useState('');
    const [editTheme, setEditTheme] = useState('');
    const [editUsername, setEditUsername] = useState('');
+   const [avatarFile, setAvatarFile] = useState<File | null>(null);
    const [favSearch, setFavSearch] = useState('');
    const [favResults, setFavResults] = useState<Show[]>([]);
    const [reviews, setReviews] = useState<Review[]>([]);
@@ -1265,10 +1273,21 @@ const Profile = () => {
    const saveProfile = async () => {
       if (profileUser) {
          try {
-            await updateUser({ ...profileUser, username: editUsername, bio: editBio, avatar: editAvatar, backgroundTheme: editTheme });
+            let avatarUrl = editAvatar;
+
+            // Upload avatar file if selected
+            if (avatarFile) {
+               const uploadedUrl = await uploadAvatar(avatarFile);
+               if (uploadedUrl) {
+                  avatarUrl = uploadedUrl;
+               }
+            }
+
+            await updateUser({ ...profileUser, username: editUsername, bio: editBio, avatar: avatarUrl, backgroundTheme: editTheme });
             await refreshUser();
             setShowEditProfile(false);
             setBackground(editTheme);
+            setAvatarFile(null);
          } catch (e: any) {
             console.error("Profile update error:", e);
             alert("Error updating profile: " + e.message + "\n\nDid you run the setup_db.sql script?");
@@ -1462,25 +1481,37 @@ const Profile = () => {
                   )}
 
                   {/* Recent Reviews */}
-                  <section>
-                     <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">Recent Reviews</h2>
-                     <div className="grid gap-4">
-                        {reviews.slice(0, 3).map(r => (
-                           <div key={r.id} className="bg-[#1f2329] p-6 rounded-xl border border-white/5 flex gap-6">
-                              <Link to={`/show/${r.showId}`} className="w-16 h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden"><img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" /></Link>
-                              <div>
-                                 <div className="flex items-center gap-2 mb-1">
-                                    <Link to={`/show/${r.showId}`} className="font-bold text-white hover:text-accentGreen">{r.showName}</Link>
-                                    <div className="flex items-center text-accentOrange text-xs"><Star size={10} fill="currentColor" /> {r.rating}</div>
+                  {reviews.length > 0 && (
+                     <section>
+                        <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">Recent Reviews</h2>
+                        <div className="grid gap-4">
+                           {reviews.slice(0, 3).map(r => (
+                              <Link
+                                 to={`/review/${r.id}`}
+                                 key={r.id}
+                                 className="bg-[#1f2329] hover:bg-[#252a32] p-4 md:p-6 rounded-xl border border-white/5 hover:border-accentGreen/30 transition-all group"
+                              >
+                                 <div className="flex gap-4 md:gap-6">
+                                    <div className="w-12 h-18 md:w-16 md:h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden shadow-lg">
+                                       <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                       <div className="flex items-start justify-between gap-2 mb-2">
+                                          <div className="font-bold text-white group-hover:text-accentGreen transition-colors truncate text-sm md:text-base">{r.showName}</div>
+                                          <div className="flex items-center gap-1 text-accentOrange text-xs flex-shrink-0">
+                                             <Star size={10} fill="currentColor" /> {r.rating}
+                                          </div>
+                                       </div>
+                                       <p className="text-gray-400 text-xs md:text-sm line-clamp-2 mb-2">{r.content}</p>
+                                       <div className="text-[10px] md:text-xs font-bold text-gray-500 group-hover:text-accentGreen uppercase tracking-wider transition-colors">Read More →</div>
+                                    </div>
                                  </div>
-                                 <p className="text-gray-400 text-sm line-clamp-2 mb-2">{r.content}</p>
-                                 <Link to={`/review/${r.id}`} className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-wider">Read More</Link>
-                              </div>
-                           </div>
-                        ))}
-                        {reviews.length === 0 && <div className="text-gray-500 text-sm">No reviews yet.</div>}
-                     </div>
-                  </section>
+                              </Link>
+                           ))}
+                        </div>
+                     </section>
+                  )}
+
                </div>
             )}
 
@@ -1524,19 +1555,46 @@ const Profile = () => {
             )}
 
             {activeTab === 'reviews' && (
-               <div className="space-y-4">
+               <div className="grid gap-6">
                   {reviews.length > 0 ? reviews.map(r => (
-                     <div key={r.id} className="bg-[#1f2329] p-6 rounded-xl border border-white/5 flex gap-6">
-                        <Link to={`/show/${r.showId}`} className="w-16 h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden"><img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" /></Link>
-                        <div>
-                           <div className="flex items-center gap-2 mb-1">
-                              <Link to={`/show/${r.showId}`} className="font-bold text-white hover:text-accentGreen">{r.showName}</Link>
-                              <div className="flex items-center text-accentOrange text-xs"><Star size={10} fill="currentColor" /> {r.rating}</div>
+                     <Link
+                        to={`/review/${r.id}`}
+                        key={r.id}
+                        className="bg-gradient-to-br from-[#1f2329] to-[#14181c] p-6 rounded-2xl border border-white/5 hover:border-accentGreen/30 transition-all duration-300 group shadow-lg hover:shadow-accentGreen/10"
+                     >
+                        <div className="flex gap-6">
+                           {/* Show Poster */}
+                           <div className="w-24 md:w-32 flex-shrink-0">
+                              <div className="aspect-[2/3] rounded-lg overflow-hidden bg-gray-800 shadow-xl group-hover:scale-105 transition-transform duration-300">
+                                 <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
+                              </div>
                            </div>
-                           <p className="text-gray-400 text-sm line-clamp-2 mb-2">{r.content}</p>
-                           <Link to={`/review/${r.id}`} className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-wider">Read More</Link>
+
+                           {/* Review Content */}
+                           <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-4 mb-3">
+                                 <div>
+                                    <h3 className="text-xl font-black text-white group-hover:text-accentGreen transition-colors mb-1">{r.showName}</h3>
+                                    <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                                       {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                 </div>
+                                 <div className="flex items-center gap-1.5 bg-accentOrange/10 px-3 py-1.5 rounded-full border border-accentOrange/20">
+                                    <Star size={14} className="text-accentOrange fill-accentOrange" />
+                                    <span className="text-sm font-black text-accentOrange">{r.rating}</span>
+                                 </div>
+                              </div>
+
+                              <p className="text-gray-300 text-sm leading-relaxed line-clamp-3 mb-3">{r.content}</p>
+
+                              <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
+                                 <span className="flex items-center gap-1"><Heart size={12} /> {r.likes.length}</span>
+                                 <span className="flex items-center gap-1"><MessageSquare size={12} /> {r.replies.length}</span>
+                                 <span className="ml-auto text-accentGreen group-hover:underline">View Full Review →</span>
+                              </div>
+                           </div>
                         </div>
-                     </div>
+                     </Link>
                   )) : (
                      <div className="col-span-full text-center text-gray-500 py-12">No reviews yet.</div>
                   )}
@@ -1553,8 +1611,31 @@ const Profile = () => {
                      <Input value={editUsername} onChange={(e: any) => setEditUsername(e.target.value)} placeholder="Username" />
                   </div>
                   <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('avatarUrl')}</label>
-                     <Input value={editAvatar} onChange={(e: any) => setEditAvatar(e.target.value)} placeholder="https://..." />
+                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Avatar</label>
+                     <div className="space-y-3">
+                        {(avatarFile || editAvatar) && (
+                           <div className="flex items-center gap-4">
+                              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800">
+                                 <img
+                                    src={avatarFile ? URL.createObjectURL(avatarFile) : editAvatar}
+                                    className="w-full h-full object-cover"
+                                 />
+                              </div>
+                              <button
+                                 onClick={() => { setAvatarFile(null); setEditAvatar(''); }}
+                                 className="text-xs text-red-500 font-bold hover:underline"
+                              >
+                                 Remove
+                              </button>
+                           </div>
+                        )}
+                        <input
+                           type="file"
+                           accept="image/*"
+                           onChange={(e) => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
+                           className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-accentGreen file:text-black hover:file:bg-accentGreen/80 cursor-pointer"
+                        />
+                     </div>
                   </div>
                   <div>
                      <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('bio')}</label>

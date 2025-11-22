@@ -3,6 +3,11 @@ import { supabase } from './supabase';
 import { User, Show, Review, List, ReviewReply, WatchlistItem } from '../types';
 
 // --- HELPER: Transform Profile to User ---
+import { getShowsByIds } from './tmdbService';
+
+// ... (imports)
+
+// --- HELPER: Transform Profile to User ---
 const transformProfileToUser = (profile: any, sessionUser: any): User => {
   let joinedAt = profile.created_at || new Date().toISOString();
   if (new Date(joinedAt).getFullYear() === 1970) {
@@ -13,6 +18,7 @@ const transformProfileToUser = (profile: any, sessionUser: any): User => {
     username: profile.username,
     email: profile.email,
     avatar: profile.avatar_url,
+    bio: profile.bio,
     backgroundTheme: profile.background_theme,
     settings: profile.settings || { language: 'en', notificationsEnabled: true },
     topFavorites: profile.top_favorites || [],
@@ -21,6 +27,80 @@ const transformProfileToUser = (profile: any, sessionUser: any): User => {
     lists: [],     // Populated separately
     joinedAt: joinedAt,
   };
+};
+
+// ... (getCurrentUser, getUserById, login, register, logout)
+
+export const updateUser = async (updatedUser: User) => {
+  // 1. Update Auth Email if changed
+  // Note: This sends a confirmation email to the new address.
+  // Only update email if it's actually different and both values are valid
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user && updatedUser.email && user.email &&
+    user.email.trim().toLowerCase() !== updatedUser.email.trim().toLowerCase()) {
+    const { error } = await supabase.auth.updateUser({ email: updatedUser.email });
+    if (error) throw error;
+  }
+
+  // 2. Update Profile Fields
+  await supabase.from('profiles').update({
+    username: updatedUser.username,
+    email: updatedUser.email, // Sync email to profile
+    avatar_url: updatedUser.avatar,
+    bio: updatedUser.bio,
+    background_theme: updatedUser.backgroundTheme,
+    settings: updatedUser.settings,
+    top_favorites: updatedUser.topFavorites,
+  }).eq('id', updatedUser.id);
+};
+
+export const uploadAvatar = async (file: File): Promise<string | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error('Error uploading avatar:', uploadError);
+    return null;
+  }
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  return data.publicUrl;
+};
+
+// ... (getAllMembers, addToWatchlist, etc.)
+
+export const getReviewsByUserId = async (userId: string): Promise<Review[]> => {
+  const { data } = await supabase.from('reviews').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (!data) return [];
+
+  const showIds = Array.from(new Set(data.map(r => r.show_id)));
+  const shows = await getShowsByIds(showIds);
+  const showMap = new Map(shows.map(s => [s.id, s]));
+
+  return data.map(r => {
+    const show = showMap.get(r.show_id);
+    return {
+      id: r.id,
+      showId: r.show_id,
+      showName: show?.name || "Unknown",
+      showPoster: show?.poster_path || null,
+      userId: r.user_id,
+      username: r.username,
+      content: r.content,
+      rating: r.rating,
+      createdAt: r.created_at,
+      likes: r.likes,
+      replies: r.replies
+    };
+  });
 };
 
 export const getCurrentUser = async (): Promise<User | null> => {
@@ -179,27 +259,7 @@ export const logout = async () => {
   await supabase.auth.signOut();
 };
 
-export const updateUser = async (updatedUser: User) => {
-  // 1. Update Auth Email if changed
-  // Note: This sends a confirmation email to the new address.
-  // Only update email if it's actually different and both values are valid
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user && updatedUser.email && user.email && 
-      user.email.trim().toLowerCase() !== updatedUser.email.trim().toLowerCase()) {
-    const { error } = await supabase.auth.updateUser({ email: updatedUser.email });
-    if (error) throw error;
-  }
 
-  // 2. Update Profile Fields
-  await supabase.from('profiles').update({
-    username: updatedUser.username,
-    email: updatedUser.email, // Sync email to profile
-    avatar_url: updatedUser.avatar,
-    background_theme: updatedUser.backgroundTheme,
-    settings: updatedUser.settings,
-    top_favorites: updatedUser.topFavorites,
-  }).eq('id', updatedUser.id);
-};
 
 export const getAllMembers = async (): Promise<User[]> => {
   const { data: profiles, error } = await supabase
@@ -453,24 +513,7 @@ export const getReviewsByShowId = async (showId: number): Promise<Review[]> => {
   }));
 };
 
-export const getReviewsByUserId = async (userId: string): Promise<Review[]> => {
-  const { data } = await supabase.from('reviews').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-  if (!data) return [];
 
-  return data.map(r => ({
-    id: r.id,
-    showId: r.show_id,
-    showName: "",
-    showPoster: null,
-    userId: r.user_id,
-    username: r.username,
-    content: r.content,
-    rating: r.rating,
-    createdAt: r.created_at,
-    likes: r.likes,
-    replies: r.replies
-  }));
-};
 
 export const getUserRatingForShow = async (userId: string, showId: number): Promise<number> => {
   const { data } = await supabase.from('ratings').select('rating').eq('user_id', userId).eq('show_id', showId).single();
