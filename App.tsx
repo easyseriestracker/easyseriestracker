@@ -803,7 +803,7 @@ const Home = () => {
             <div className="w-12 h-12 border-4 border-accentGreen border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-400 text-sm animate-pulse">Loading content...</p>
          </div>
-      )
+      );
    }
 
    const heroShow = heroCandidates[heroIndex];
@@ -1525,7 +1525,7 @@ const ReviewDetailPage = () => {
                </div>
             </div>
          </div>
-      </div >
+      </div>
    );
 };
 
@@ -1862,395 +1862,411 @@ const Profile = () => {
    // Reviews are now in state
    const recentRated = ratedShowIds.slice(-4).reverse();
 
+   // Dynamic Background based on Top Favorite
+   const themeImage = profileUser.topFavorites?.[0]?.backdrop_path
+      ? getImageUrl(profileUser.topFavorites[0].backdrop_path, 'original')
+      : null;
+
    return (
-      <div className="pt-32 px-6 max-w-6xl mx-auto min-h-screen relative z-10">
-         {/* Header */}
-         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-8 md:mb-12">
-            <div className={`w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full border-4 border-accentGreen/20 bg-[#1f2329] shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${getAvatarColor(profileUser.username)}`}>
-               {profileUser.avatar ? <img src={profileUser.avatar} className="w-full h-full object-cover" /> : (
-                  <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white">
-                     {profileUser.username.charAt(0).toUpperCase()}
+      <div className="min-h-screen bg-[#14181c] relative">
+         {/* Dynamic Background */}
+         <div className="absolute inset-0 h-[50vh] overflow-hidden pointer-events-none">
+            {themeImage && (
+               <>
+                  <div className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm scale-110" style={{ backgroundImage: `url(${themeImage})` }}></div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#14181c]/50 via-[#14181c]/80 to-[#14181c]"></div>
+               </>
+            )}
+         </div>
+         <div className="relative z-10 pt-32 px-6 max-w-6xl mx-auto min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-8 md:mb-12">
+               <div className={`w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full border-4 border-accentGreen/20 bg-[#1f2329] shadow-2xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${getAvatarColor(profileUser.username)}`}>
+                  {profileUser.avatar ? <img src={profileUser.avatar} className="w-full h-full object-cover" /> : (
+                     <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white">
+                        {profileUser.username.charAt(0).toUpperCase()}
+                     </div>
+                  )}
+               </div>
+               <div className="flex-1 mb-2 text-center md:text-left w-full">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 tracking-tight drop-shadow-lg text-shadow">{profileUser.username}</h1>
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center justify-center md:justify-start gap-2">
+                     <Calendar size={12} /> Member since {new Date(profileUser.joinedAt).toLocaleDateString()}
+                  </div>
+                  {profileUser.bio && <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium max-w-2xl text-shadow mx-auto md:mx-0">{profileUser.bio}</p>}
+               </div>
+               {isOwnProfile && (
+                  <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 justify-center md:justify-start w-full md:w-auto">
+                     {currentUser && currentUser.id === '9f05df16-4a02-46cc-a45c-e0ad1aa53892' && (
+                        <Button
+                           variant="secondary"
+                           className="!text-xs sm:!text-sm"
+                           onClick={async () => {
+                              setShowSuggestionsModal(true);
+                              const suggs = await getSuggestions();
+                              setSuggestions(suggs);
+                           }}
+                        >
+                           <Bell size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('suggestions')}</span> {suggestions.length > 0 && `(${suggestions.length})`}
+                        </Button>
+                     )}
+                     <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowEditProfile(true)}><Edit2 size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('editProfile')}</span></Button>
+                     <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowSettings(true)}><Settings size={14} className="sm:w-4 sm:h-4" /></Button>
+                     <Button variant="danger" className="!text-xs sm:!text-sm" onClick={handleLogout}><LogOut size={14} className="sm:w-4 sm:h-4" /></Button>
                   </div>
                )}
             </div>
-            <div className="flex-1 mb-2 text-center md:text-left w-full">
-               <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 tracking-tight drop-shadow-lg text-shadow">{profileUser.username}</h1>
-               <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center justify-center md:justify-start gap-2">
-                  <Calendar size={12} /> Member since {new Date(profileUser.joinedAt).toLocaleDateString()}
-               </div>
-               {profileUser.bio && <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium max-w-2xl text-shadow mx-auto md:mx-0">{profileUser.bio}</p>}
-            </div>
-            {isOwnProfile && (
-               <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 justify-center md:justify-start w-full md:w-auto">
-                  {currentUser && currentUser.id === '9f05df16-4a02-46cc-a45c-e0ad1aa53892' && (
-                     <Button
-                        variant="secondary"
-                        className="!text-xs sm:!text-sm"
-                        onClick={async () => {
-                           setShowSuggestionsModal(true);
-                           const suggs = await getSuggestions();
-                           setSuggestions(suggs);
-                        }}
-                     >
-                        <Bell size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('suggestions')}</span> {suggestions.length > 0 && `(${suggestions.length})`}
-                     </Button>
-                  )}
-                  <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowEditProfile(true)}><Edit2 size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('editProfile')}</span></Button>
-                  <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowSettings(true)}><Settings size={14} className="sm:w-4 sm:h-4" /></Button>
-                  <Button variant="danger" className="!text-xs sm:!text-sm" onClick={handleLogout}><LogOut size={14} className="sm:w-4 sm:h-4" /></Button>
-               </div>
-            )}
-         </div>
 
-         {/* Modern Tab Navigation */}
-         <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-10 pb-4 sm:pb-6 overflow-x-auto">
-            {[
-               { id: 'overview', label: t('overview'), count: null, icon: <Eye size={16} className="sm:w-[18px] sm:h-[18px]" /> },
-               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> },
-               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={16} className="sm:w-[18px] sm:h-[18px]" /> },
-               { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={16} className="sm:w-[18px] sm:h-[18px]" /> },
-               { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" /> },
-            ].map(tab => (
-               <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`group relative px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 flex-shrink-0 ${activeTab === tab.id
-                     ? 'bg-gradient-to-br from-accentGreen to-emerald-400 text-black shadow-[0_0_20px_rgba(74,222,128,0.5)] border border-accentGreen/50 scale-105'
-                     : 'bg-gradient-to-br from-white/10 to-white/5 text-gray-200 border border-white/20 hover:border-accentGreen/60 hover:from-white/15 hover:to-white/10 hover:text-white hover:shadow-lg'
-                     }`}
-               >
-                  <div className="flex items-center gap-2">
-                     <span className={activeTab === tab.id ? 'text-black' : 'text-gray-400 group-hover:text-accentGreen'}>
-                        {tab.icon}
-                     </span>
-                     <span>{tab.label}</span>
-                     {tab.count !== null && (
-                        <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
-                           ? 'bg-black/20 text-black'
-                           : 'bg-white/20 text-gray-200 group-hover:bg-accentGreen/20 group-hover:text-accentGreen'
-                           }`}>
-                           {tab.count}
+            {/* Modern Tab Navigation */}
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-10 pb-4 sm:pb-6 overflow-x-auto">
+               {[
+                  { id: 'overview', label: t('overview'), count: null, icon: <Eye size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+                  { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+                  { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+                  { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+                  { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+               ].map(tab => (
+                  <button
+                     key={tab.id}
+                     onClick={() => setActiveTab(tab.id as any)}
+                     className={`group relative px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 flex-shrink-0 ${activeTab === tab.id
+                        ? 'bg-gradient-to-br from-accentGreen to-emerald-400 text-black shadow-[0_0_20px_rgba(74,222,128,0.5)] border border-accentGreen/50 scale-105'
+                        : 'bg-gradient-to-br from-white/10 to-white/5 text-gray-200 border border-white/20 hover:border-accentGreen/60 hover:from-white/15 hover:to-white/10 hover:text-white hover:shadow-lg'
+                        }`}
+                  >
+                     <div className="flex items-center gap-2">
+                        <span className={activeTab === tab.id ? 'text-black' : 'text-gray-400 group-hover:text-accentGreen'}>
+                           {tab.icon}
                         </span>
+                        <span>{tab.label}</span>
+                        {tab.count !== null && (
+                           <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
+                              ? 'bg-black/20 text-black'
+                              : 'bg-white/20 text-gray-200 group-hover:bg-accentGreen/20 group-hover:text-accentGreen'
+                              }`}>
+                              {tab.count}
+                           </span>
+                        )}
+                     </div>
+                  </button>
+               ))}
+            </div>
+
+            <div className="animate-fade-in-up">
+               {activeTab === 'overview' && (
+                  <div className="space-y-12">
+                     {/* Top Favorites */}
+                     <section>
+                        <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('topFavorites')}</h2>
+                        <div className="grid grid-cols-3 gap-6">
+                           {[0, 1, 2].map(i => {
+                              const show = profileUser.topFavorites[i];
+                              return (
+                                 <div key={i} onClick={() => isOwnProfile && setShowFavSearchModal(true)} className={`aspect-[2/3] bg-[#1f2329] rounded-xl border border-white/10 overflow-hidden relative group ${isOwnProfile ? 'cursor-pointer hover:border-accentGreen/50' : ''}`}>
+                                    {show ? (
+                                       <>
+                                          <img src={getImageUrl(show.poster_path)} className="w-full h-full object-cover" />
+                                          {isOwnProfile && (
+                                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                                                <Button variant="danger" onClick={async (e: any) => { e.stopPropagation(); await removeFav(show.id); }}>Remove</Button>
+                                             </div>
+                                          )}
+                                       </>
+                                    ) : (
+                                       <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                          {isOwnProfile ? <Plus size={40} className="opacity-50 group-hover:opacity-100 transition" /> : <span className="text-xs font-bold uppercase opacity-30">Empty</span>}
+                                       </div>
+                                    )}
+                                 </div>
+                              )
+                           })}
+                        </div>
+                     </section>
+
+                     {/* Recently Rated */}
+                     {recentRated.length > 0 && (
+                        <section>
+                           <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('recentlyRated')}</h2>
+                           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                              {recentRated.map(id => <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />)}
+                           </div>
+                        </section>
+                     )}
+
+                     {/* Recent Reviews */}
+                     {reviews.length > 0 && (
+                        <section>
+                           <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">Recent Reviews</h2>
+                           <div className="grid gap-4">
+                              {reviews.slice(0, 3).map(r => (
+                                 <Link
+                                    to={`/review/${r.id}`}
+                                    key={r.id}
+                                    className="bg-[#1f2329] hover:bg-[#252a32] p-4 md:p-6 rounded-xl border border-white/5 hover:border-accentGreen/30 transition-all group"
+                                 >
+                                    <div className="flex gap-4 md:gap-6">
+                                       <div className="w-12 h-18 md:w-16 md:h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden shadow-lg">
+                                          <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
+                                       </div>
+                                       <div className="flex-1 min-w-0">
+                                          <div className="flex items-start justify-between gap-2 mb-2">
+                                             <div className="font-bold text-white group-hover:text-accentGreen transition-colors truncate text-sm md:text-base">{r.showName}</div>
+                                             <div className="flex items-center gap-1 text-accentOrange text-xs flex-shrink-0">
+                                                <Star size={10} fill="currentColor" /> {r.rating}
+                                             </div>
+                                          </div>
+                                          <p className="text-gray-400 text-xs md:text-sm line-clamp-2 mb-2">{r.content}</p>
+                                          <div className="text-[10px] md:text-xs font-bold text-gray-500 group-hover:text-accentGreen uppercase tracking-wider transition-colors">Read More →</div>
+                                       </div>
+                                    </div>
+                                 </Link>
+                              ))}
+                           </div>
+                        </section>
+                     )}
+
+                  </div>
+               )}
+
+               {activeTab === 'lists' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {profileUser.lists.map(l => (
+                        <Link to={`/list/${l.id}`} key={l.id} className="bg-[#1f2329] p-6 rounded-xl border border-white/5 hover:border-accentGreen/30 transition group">
+                           <h3 className="font-bold text-white text-lg group-hover:text-accentGreen">{l.name}</h3>
+                           <p className="text-gray-400 text-sm mb-4 line-clamp-1">{l.description || 'No description'}</p>
+                           <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-gray-600">
+                              <span>{l.items.length} Shows</span>
+                              <span>{l.likes.length} Likes</span>
+                           </div>
+                        </Link>
+                     ))}
+                     {isOwnProfile && (
+                        <button onClick={() => setShowCreateListModal(true)} className="bg-transparent border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:border-accentGreen/50 transition h-32">
+                           <div className="flex items-center gap-2 font-bold uppercase tracking-widest"><Plus /> {t('createList')}</div>
+                        </button>
                      )}
                   </div>
-               </button>
-            ))}
-         </div>
+               )}
 
-         <div className="animate-fade-in-up">
-            {activeTab === 'overview' && (
-               <div className="space-y-12">
-                  {/* Top Favorites */}
-                  <section>
-                     <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('topFavorites')}</h2>
-                     <div className="grid grid-cols-3 gap-6">
-                        {[0, 1, 2].map(i => {
-                           const show = profileUser.topFavorites[i];
-                           return (
-                              <div key={i} onClick={() => isOwnProfile && setShowFavSearchModal(true)} className={`aspect-[2/3] bg-[#1f2329] rounded-xl border border-white/10 overflow-hidden relative group ${isOwnProfile ? 'cursor-pointer hover:border-accentGreen/50' : ''}`}>
-                                 {show ? (
-                                    <>
-                                       <img src={getImageUrl(show.poster_path)} className="w-full h-full object-cover" />
-                                       {isOwnProfile && (
-                                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                                             <Button variant="danger" onClick={async (e: any) => { e.stopPropagation(); await removeFav(show.id); }}>Remove</Button>
-                                          </div>
-                                       )}
-                                    </>
-                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                       {isOwnProfile ? <Plus size={40} className="opacity-50 group-hover:opacity-100 transition" /> : <span className="text-xs font-bold uppercase opacity-30">Empty</span>}
-                                    </div>
-                                 )}
+               {activeTab === 'ratings' && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                     {ratedShowIds.map(id => (
+                        <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />
+                     ))}
+                  </div>
+               )}
+
+               {activeTab === 'watchlist' && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                     {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).map(item => (
+                        <SimpleShowCard key={item.showId} id={item.showId} />
+                     ))}
+                     {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).length === 0 && (
+                        <div className="col-span-full text-center text-gray-500 py-12">No shows in watchlist yet.</div>
+                     )}
+                  </div>
+               )}
+
+               {activeTab === 'reviews' && (
+                  <div className="grid gap-6">
+                     {reviews.length > 0 ? reviews.map(r => (
+                        <Link
+                           to={`/review/${r.id}`}
+                           key={r.id}
+                           className="bg-gradient-to-br from-[#1f2329] to-[#14181c] p-6 rounded-2xl border border-white/5 hover:border-accentGreen/30 transition-all duration-300 group shadow-lg hover:shadow-accentGreen/10"
+                        >
+                           <div className="flex gap-6">
+                              {/* Show Poster */}
+                              <div className="w-24 md:w-32 flex-shrink-0">
+                                 <div className="aspect-[2/3] rounded-lg overflow-hidden bg-gray-800 shadow-xl group-hover:scale-105 transition-transform duration-300">
+                                    <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
+                                 </div>
                               </div>
-                           )
-                        })}
-                     </div>
-                  </section>
 
-                  {/* Recently Rated */}
-                  {recentRated.length > 0 && (
-                     <section>
-                        <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('recentlyRated')}</h2>
-                        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                           {recentRated.map(id => <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />)}
-                        </div>
-                     </section>
-                  )}
-
-                  {/* Recent Reviews */}
-                  {reviews.length > 0 && (
-                     <section>
-                        <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">Recent Reviews</h2>
-                        <div className="grid gap-4">
-                           {reviews.slice(0, 3).map(r => (
-                              <Link
-                                 to={`/review/${r.id}`}
-                                 key={r.id}
-                                 className="bg-[#1f2329] hover:bg-[#252a32] p-4 md:p-6 rounded-xl border border-white/5 hover:border-accentGreen/30 transition-all group"
-                              >
-                                 <div className="flex gap-4 md:gap-6">
-                                    <div className="w-12 h-18 md:w-16 md:h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden shadow-lg">
-                                       <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                       <div className="flex items-start justify-between gap-2 mb-2">
-                                          <div className="font-bold text-white group-hover:text-accentGreen transition-colors truncate text-sm md:text-base">{r.showName}</div>
-                                          <div className="flex items-center gap-1 text-accentOrange text-xs flex-shrink-0">
-                                             <Star size={10} fill="currentColor" /> {r.rating}
-                                          </div>
+                              {/* Review Content */}
+                              <div className="flex-1 min-w-0">
+                                 <div className="flex items-start justify-between gap-4 mb-3">
+                                    <div>
+                                       <h3 className="text-xl font-black text-white group-hover:text-accentGreen transition-colors mb-1">{r.showName}</h3>
+                                       <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                                          {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                        </div>
-                                       <p className="text-gray-400 text-xs md:text-sm line-clamp-2 mb-2">{r.content}</p>
-                                       <div className="text-[10px] md:text-xs font-bold text-gray-500 group-hover:text-accentGreen uppercase tracking-wider transition-colors">Read More →</div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-accentOrange/10 px-3 py-1.5 rounded-full border border-accentOrange/20">
+                                       <Star size={14} className="text-accentOrange fill-accentOrange" />
+                                       <span className="text-sm font-black text-accentOrange">{r.rating}</span>
                                     </div>
                                  </div>
-                              </Link>
-                           ))}
-                        </div>
-                     </section>
-                  )}
 
-               </div>
-            )}
+                                 <p className="text-gray-300 text-sm leading-relaxed line-clamp-3 mb-3">{r.content}</p>
 
-            {activeTab === 'lists' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {profileUser.lists.map(l => (
-                     <Link to={`/list/${l.id}`} key={l.id} className="bg-[#1f2329] p-6 rounded-xl border border-white/5 hover:border-accentGreen/30 transition group">
-                        <h3 className="font-bold text-white text-lg group-hover:text-accentGreen">{l.name}</h3>
-                        <p className="text-gray-400 text-sm mb-4 line-clamp-1">{l.description || 'No description'}</p>
-                        <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-gray-600">
-                           <span>{l.items.length} Shows</span>
-                           <span>{l.likes.length} Likes</span>
-                        </div>
-                     </Link>
-                  ))}
-                  {isOwnProfile && (
-                     <button onClick={() => setShowCreateListModal(true)} className="bg-transparent border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center text-gray-500 hover:text-white hover:border-accentGreen/50 transition h-32">
-                        <div className="flex items-center gap-2 font-bold uppercase tracking-widest"><Plus /> {t('createList')}</div>
-                     </button>
-                  )}
-               </div>
-            )}
-
-            {activeTab === 'ratings' && (
-               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {ratedShowIds.map(id => (
-                     <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />
-                  ))}
-               </div>
-            )}
-
-            {activeTab === 'watchlist' && (
-               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).map(item => (
-                     <SimpleShowCard key={item.showId} id={item.showId} />
-                  ))}
-                  {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).length === 0 && (
-                     <div className="col-span-full text-center text-gray-500 py-12">No shows in watchlist yet.</div>
-                  )}
-               </div>
-            )}
-
-            {activeTab === 'reviews' && (
-               <div className="grid gap-6">
-                  {reviews.length > 0 ? reviews.map(r => (
-                     <Link
-                        to={`/review/${r.id}`}
-                        key={r.id}
-                        className="bg-gradient-to-br from-[#1f2329] to-[#14181c] p-6 rounded-2xl border border-white/5 hover:border-accentGreen/30 transition-all duration-300 group shadow-lg hover:shadow-accentGreen/10"
-                     >
-                        <div className="flex gap-6">
-                           {/* Show Poster */}
-                           <div className="w-24 md:w-32 flex-shrink-0">
-                              <div className="aspect-[2/3] rounded-lg overflow-hidden bg-gray-800 shadow-xl group-hover:scale-105 transition-transform duration-300">
-                                 <img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" alt={r.showName} />
-                              </div>
-                           </div>
-
-                           {/* Review Content */}
-                           <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-3">
-                                 <div>
-                                    <h3 className="text-xl font-black text-white group-hover:text-accentGreen transition-colors mb-1">{r.showName}</h3>
-                                    <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">
-                                       {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </div>
-                                 </div>
-                                 <div className="flex items-center gap-1.5 bg-accentOrange/10 px-3 py-1.5 rounded-full border border-accentOrange/20">
-                                    <Star size={14} className="text-accentOrange fill-accentOrange" />
-                                    <span className="text-sm font-black text-accentOrange">{r.rating}</span>
+                                 <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
+                                    <span className="flex items-center gap-1"><Heart size={12} /> {r.likes.length}</span>
+                                    <span className="flex items-center gap-1"><MessageSquare size={12} /> {r.replies.length}</span>
+                                    <span className="ml-auto text-accentGreen group-hover:underline">View Full Review →</span>
                                  </div>
                               </div>
-
-                              <p className="text-gray-300 text-sm leading-relaxed line-clamp-3 mb-3">{r.content}</p>
-
-                              <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-                                 <span className="flex items-center gap-1"><Heart size={12} /> {r.likes.length}</span>
-                                 <span className="flex items-center gap-1"><MessageSquare size={12} /> {r.replies.length}</span>
-                                 <span className="ml-auto text-accentGreen group-hover:underline">View Full Review →</span>
-                              </div>
                            </div>
-                        </div>
-                     </Link>
-                  )) : (
-                     <div className="col-span-full text-center text-gray-500 py-12">No reviews yet.</div>
-                  )}
-               </div>
-            )}
-         </div>
+                        </Link>
+                     )) : (
+                        <div className="col-span-full text-center text-gray-500 py-12">No reviews yet.</div>
+                     )}
+                  </div>
+               )}
+            </div>
 
-         {/* Modals */}
-         {showEditProfile && (
-            <Modal title={t('editProfile')} onClose={() => setShowEditProfile(false)}>
-               <div className="space-y-6">
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('username')}</label>
-                     <Input value={editUsername} onChange={(e: any) => setEditUsername(e.target.value)} placeholder="Username" />
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Avatar</label>
-                     <div className="space-y-3">
-                        {(avatarFile || editAvatar) && (
-                           <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800">
-                                 <img
-                                    src={avatarFile ? URL.createObjectURL(avatarFile) : editAvatar}
-                                    className="w-full h-full object-cover"
-                                 />
-                              </div>
-                              <button
-                                 onClick={() => { setAvatarFile(null); setEditAvatar(''); }}
-                                 className="text-xs text-red-500 font-bold hover:underline"
-                              >
-                                 Remove
-                              </button>
-                           </div>
-                        )}
-                        <input
-                           type="file"
-                           accept="image/*"
-                           onChange={(e) => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
-                           className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-accentGreen file:text-black hover:file:bg-accentGreen/80 cursor-pointer"
-                        />
-                     </div>
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('bio')}</label>
-                     <Input value={editBio} onChange={(e: any) => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('theme')}</label>
-                     <div className="grid grid-cols-2 gap-3 mb-2">
-                        {themes.map(th => (
-                           <button key={th.name} onClick={() => setEditTheme(th.url)} className={`relative aspect-video rounded overflow-hidden border transition group ${editTheme === th.url ? 'border-accentGreen ring-2 ring-accentGreen/50' : 'border-white/20 hover:border-accentGreen'}`}>
-                              <img src={th.url} className="w-full h-full object-cover group-hover:opacity-100" />
-                              <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] font-bold text-white p-1 text-center">{th.name}</span>
-                           </button>
-                        ))}
-                     </div>
-                     <button onClick={() => setEditTheme('')} className="mt-2 w-full py-2 text-xs text-red-500 font-bold uppercase tracking-wide border border-red-500/20 hover:bg-red-500/10 rounded">{t('resetTheme')}</button>
-                  </div>
-                  <Button onClick={saveProfile} className="w-full">{t('saveChanges')}</Button>
-               </div>
-            </Modal>
-         )}
-
-         {showCreateListModal && (
-            <Modal title={t('createList')} onClose={() => setShowCreateListModal(false)}>
-               <div className="space-y-4">
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('listName')}</label>
-                     <Input value={newListName} onChange={(e: any) => setNewListName(e.target.value)} placeholder="My Favorites..." />
-                  </div>
-                  <div>
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('desc')}</label>
-                     <Input value={newListDesc} onChange={(e: any) => setNewListDesc(e.target.value)} placeholder="Optional description..." />
-                  </div>
-                  <Button onClick={handleCreateList} className="w-full">Create</Button>
-               </div>
-            </Modal>
-         )}
-
-         {showSettings && (
-            <Modal title={t('settings')} onClose={() => setShowSettings(false)}>
-               <div className="space-y-6">
-                  <div className="border-b border-white/10 pb-4">
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('language')}</label>
-                     <div className="flex gap-2">
-                        <button onClick={() => setLanguage('en')} className={`flex-1 py-2 rounded font-bold text-xs transition ${language === 'en' ? 'bg-accentGreen text-black' : 'bg-white/5 text-gray-400'}`}>English</button>
-                        <button onClick={() => setLanguage('tr')} className={`flex-1 py-2 rounded font-bold text-xs transition ${language === 'tr' ? 'bg-accentGreen text-black' : 'bg-white/5 text-gray-400'}`}>Türkçe</button>
-                     </div>
-                  </div>
-                  <div className="border-t border-white/10 pt-4">
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('emailAddr')}</label>
-                     <Input value={editEmail} onChange={(e: any) => setEditEmail(e.target.value)} />
-                  </div>
-                  <div className="border-t border-white/10 pt-4">
-                     <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Change Password</label>
-                     <Input type="password" value={currentPass} onChange={(e: any) => setCurrentPass(e.target.value)} placeholder="Current Password" className="mb-2" />
-                     <Input type="password" value={newPass} onChange={(e: any) => setNewPass(e.target.value)} placeholder="New Password" />
-                     <Input type="password" value={confirmPass} onChange={(e: any) => setConfirmPass(e.target.value)} placeholder="Confirm New Password" />
-                  </div>
-                  <div className="flex items-center justify-between border-t border-white/10 pt-4">
+            {/* Modals */}
+            {showEditProfile && (
+               <Modal title={t('editProfile')} onClose={() => setShowEditProfile(false)}>
+                  <div className="space-y-6">
                      <div>
-                        <span className="block text-sm font-bold text-white">{t('notificationsActive')}</span>
-                        <span className="text-[10px] text-gray-500">Get emails when new episodes air.</span>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('username')}</label>
+                        <Input value={editUsername} onChange={(e: any) => setEditUsername(e.target.value)} placeholder="Username" />
                      </div>
-                     <button onClick={() => setNotifEnabled(!notifEnabled)} className={`w-10 h-6 rounded-full p-1 transition ${notifEnabled ? 'bg-accentGreen' : 'bg-gray-700'}`}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow transition transform ${notifEnabled ? 'translate-x-4' : ''}`} />
-                     </button>
-                  </div>
-                  <Button onClick={saveSettings} className="w-full">{t('saveChanges')}</Button>
-               </div>
-            </Modal>
-         )}
-
-         {showFavSearchModal && (
-            <Modal title="Add Favorite" onClose={() => setShowFavSearchModal(false)}>
-               <Input value={favSearch} onChange={(e: any) => searchFavs(e.target.value)} placeholder="Search shows..." autoFocus />
-               <div className="mt-4 space-y-2">
-                  {favResults.map(s => (
-                     <button key={s.id} onClick={() => addTopFav(s)} className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded transition">
-                        <img src={getImageUrl(s.poster_path)} className="w-8 h-12 object-cover rounded bg-gray-800" />
-                        <span className="font-bold text-white text-sm">{s.name}</span>
-                     </button>
-                  ))}
-               </div>
-            </Modal>
-         )}
-
-         {showSuggestionsModal && (
-            <Modal title={t('suggestions')} onClose={() => setShowSuggestionsModal(false)}>
-               <div className="max-h-[60vh] overflow-y-auto space-y-4">
-                  {suggestions.length === 0 ? (
-                     <div className="text-center text-gray-500 py-8">{t('noSuggestions')}</div>
-                  ) : (
-                     suggestions.map(s => (
-                        <div key={s.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                           <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                    {s.fromUsername?.[0]?.toUpperCase() || '?'}
+                     <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Avatar</label>
+                        <div className="space-y-3">
+                           {(avatarFile || editAvatar) && (
+                              <div className="flex items-center gap-4">
+                                 <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-800">
+                                    <img
+                                       src={avatarFile ? URL.createObjectURL(avatarFile) : editAvatar}
+                                       className="w-full h-full object-cover"
+                                    />
                                  </div>
-                                 <span className="font-bold text-white">{s.fromUsername || 'Anonymous'}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                 <span className="text-xs text-gray-500">
-                                    {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                 </span>
-                                 <button onClick={() => handleDeleteSuggestion(s.id)} className="text-gray-500 hover:text-red-500 transition">
-                                    <Trash2 size={14} />
+                                 <button
+                                    onClick={() => { setAvatarFile(null); setEditAvatar(''); }}
+                                    className="text-xs text-red-500 font-bold hover:underline"
+                                 >
+                                    Remove
                                  </button>
                               </div>
-                           </div>
-                           <p className="text-gray-300 text-sm whitespace-pre-wrap">{s.message}</p>
+                           )}
+                           <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => e.target.files?.[0] && setAvatarFile(e.target.files[0])}
+                              className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-accentGreen file:text-black hover:file:bg-accentGreen/80 cursor-pointer"
+                           />
                         </div>
-                     ))
-                  )}
-               </div>
-            </Modal>
-         )}
+                     </div>
+                     <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('bio')}</label>
+                        <Input value={editBio} onChange={(e: any) => setEditBio(e.target.value)} placeholder="Tell us about yourself..." />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('theme')}</label>
+                        <div className="grid grid-cols-2 gap-3 mb-2">
+                           {themes.map(th => (
+                              <button key={th.name} onClick={() => setEditTheme(th.url)} className={`relative aspect-video rounded overflow-hidden border transition group ${editTheme === th.url ? 'border-accentGreen ring-2 ring-accentGreen/50' : 'border-white/20 hover:border-accentGreen'}`}>
+                                 <img src={th.url} className="w-full h-full object-cover group-hover:opacity-100" />
+                                 <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] font-bold text-white p-1 text-center">{th.name}</span>
+                              </button>
+                           ))}
+                        </div>
+                        <button onClick={() => setEditTheme('')} className="mt-2 w-full py-2 text-xs text-red-500 font-bold uppercase tracking-wide border border-red-500/20 hover:bg-red-500/10 rounded">{t('resetTheme')}</button>
+                     </div>
+                     <Button onClick={saveProfile} className="w-full">{t('saveChanges')}</Button>
+                  </div>
+               </Modal>
+            )}
+
+            {showCreateListModal && (
+               <Modal title={t('createList')} onClose={() => setShowCreateListModal(false)}>
+                  <div className="space-y-4">
+                     <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('listName')}</label>
+                        <Input value={newListName} onChange={(e: any) => setNewListName(e.target.value)} placeholder="My Favorites..." />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('desc')}</label>
+                        <Input value={newListDesc} onChange={(e: any) => setNewListDesc(e.target.value)} placeholder="Optional description..." />
+                     </div>
+                     <Button onClick={handleCreateList} className="w-full">Create</Button>
+                  </div>
+               </Modal>
+            )}
+
+            {showSettings && (
+               <Modal title={t('settings')} onClose={() => setShowSettings(false)}>
+                  <div className="space-y-6">
+                     <div className="border-b border-white/10 pb-4">
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('language')}</label>
+                        <div className="flex gap-2">
+                           <button onClick={() => setLanguage('en')} className={`flex-1 py-2 rounded font-bold text-xs transition ${language === 'en' ? 'bg-accentGreen text-black' : 'bg-white/5 text-gray-400'}`}>English</button>
+                           <button onClick={() => setLanguage('tr')} className={`flex-1 py-2 rounded font-bold text-xs transition ${language === 'tr' ? 'bg-accentGreen text-black' : 'bg-white/5 text-gray-400'}`}>Türkçe</button>
+                        </div>
+                     </div>
+                     <div className="border-t border-white/10 pt-4">
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('emailAddr')}</label>
+                        <Input value={editEmail} onChange={(e: any) => setEditEmail(e.target.value)} />
+                     </div>
+                     <div className="border-t border-white/10 pt-4">
+                        <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Change Password</label>
+                        <Input type="password" value={currentPass} onChange={(e: any) => setCurrentPass(e.target.value)} placeholder="Current Password" className="mb-2" />
+                        <Input type="password" value={newPass} onChange={(e: any) => setNewPass(e.target.value)} placeholder="New Password" />
+                        <Input type="password" value={confirmPass} onChange={(e: any) => setConfirmPass(e.target.value)} placeholder="Confirm New Password" />
+                     </div>
+                     <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                        <div>
+                           <span className="block text-sm font-bold text-white">{t('notificationsActive')}</span>
+                           <span className="text-[10px] text-gray-500">Get emails when new episodes air.</span>
+                        </div>
+                        <button onClick={() => setNotifEnabled(!notifEnabled)} className={`w-10 h-6 rounded-full p-1 transition ${notifEnabled ? 'bg-accentGreen' : 'bg-gray-700'}`}>
+                           <div className={`w-4 h-4 bg-white rounded-full shadow transition transform ${notifEnabled ? 'translate-x-4' : ''}`} />
+                        </button>
+                     </div>
+                     <Button onClick={saveSettings} className="w-full">{t('saveChanges')}</Button>
+                  </div>
+               </Modal>
+            )}
+
+            {showFavSearchModal && (
+               <Modal title="Add Favorite" onClose={() => setShowFavSearchModal(false)}>
+                  <Input value={favSearch} onChange={(e: any) => searchFavs(e.target.value)} placeholder="Search shows..." autoFocus />
+                  <div className="mt-4 space-y-2">
+                     {favResults.map(s => (
+                        <button key={s.id} onClick={() => addTopFav(s)} className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded transition">
+                           <img src={getImageUrl(s.poster_path)} className="w-8 h-12 object-cover rounded bg-gray-800" />
+                           <span className="font-bold text-white text-sm">{s.name}</span>
+                        </button>
+                     ))}
+                  </div>
+               </Modal>
+            )}
+
+            {showSuggestionsModal && (
+               <Modal title={t('suggestions')} onClose={() => setShowSuggestionsModal(false)}>
+                  <div className="max-h-[60vh] overflow-y-auto space-y-4">
+                     {suggestions.length === 0 ? (
+                        <div className="text-center text-gray-500 py-8">{t('noSuggestions')}</div>
+                     ) : (
+                        suggestions.map(s => (
+                           <div key={s.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                              <div className="flex items-center justify-between mb-2">
+                                 <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                                       {s.fromUsername?.[0]?.toUpperCase() || '?'}
+                                    </div>
+                                    <span className="font-bold text-white">{s.fromUsername || 'Anonymous'}</span>
+                                 </div>
+                                 <div className="flex items-center gap-3">
+                                    <span className="text-xs text-gray-500">
+                                       {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                    <button onClick={() => handleDeleteSuggestion(s.id)} className="text-gray-500 hover:text-red-500 transition">
+                                       <Trash2 size={14} />
+                                    </button>
+                                 </div>
+                              </div>
+                              <p className="text-gray-300 text-sm whitespace-pre-wrap">{s.message}</p>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </Modal>
+            )}
+         </div>
       </div>
    );
 };
@@ -2376,18 +2392,18 @@ const ShowPage = () => {
    // Ideally we should have a getShowStats function.
    // For this refactor, I will comment out the synchronous calculation.
    const siteAvg = 'N/A';
-   /* 
+   /*
    const allMembers = getAllMembers();
    let siteTotal = 0;
    let siteCount = 0;
    allMembers.forEach(m => {
       if (m.ratings[show.id]) {
-         siteTotal += m.ratings[show.id];
+            siteTotal += m.ratings[show.id];
          siteCount++;
       }
    });
    const siteAvg = siteCount > 0 ? (siteTotal / siteCount).toFixed(1) : 'N/A';
-   */
+         */
 
    return (
       <div className="min-h-screen bg-[#14181c] relative">
@@ -2676,50 +2692,66 @@ const Members = () => {
       <div className="pt-20 md:pt-32 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 text-glow text-center sm:text-left">{t('community')}</h1>
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {members.map(m => (
-               <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
-                  <div className="flex items-center gap-4 mb-6">
-                     <div className={`w-16 h-16 rounded-full border-2 border-white/10 group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl`}>
-                        {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
-                     </div>
-                     <div>
-                        <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
-                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
-                        {m.lastSeen && (Date.now() - new Date(m.lastSeen).getTime() < 5 * 60 * 1000) && (
-                           <div className="flex items-center gap-1.5 mt-1">
-                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Online</span>
+            {members.map(m => {
+               const memberTheme = m.topFavorites?.[0]?.backdrop_path
+                  ? getImageUrl(m.topFavorites[0].backdrop_path, 'w500')
+                  : null;
+
+               return (
+                  <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
+                     {/* Card Background */}
+                     {memberTheme && (
+                        <>
+                           <div className="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-20 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
+                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        </>
+                     )}
+
+                     <div className="relative z-10">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className={`w-16 h-16 rounded-full border-2 border-white/10 group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl`}>
+                              {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
                            </div>
-                        )}
-                     </div>
-                  </div>
-
-                  {/* Mini Stats */}
-                  <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">
-                     <div className="text-center">
-                        <div className="text-lg font-black text-white">{m.watchlist.length}</div>
-                        <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
-                     </div>
-                     <div className="text-center">
-                        <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
-                        <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
-                     </div>
-                     <div className="text-center">
-                        <div className="text-lg font-black text-white">{m.lists.length}</div>
-                        <div className="text-[10px] font-bold uppercase text-gray-600">Lists</div>
-                     </div>
-                  </div>
-
-                  {/* Favorites Preview */}
-                  <div className="flex gap-2 justify-center">
-                     {m.topFavorites.slice(0, 3).map((s, i) => (
-                        <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
-                           <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" />
+                           <div>
+                              <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
+                              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
+                              {m.lastSeen && (Date.now() - new Date(m.lastSeen).getTime() < 5 * 60 * 1000) && (
+                                 <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Online</span>
+                                 </div>
+                              )}
+                           </div>
                         </div>
-                     ))}
-                  </div>
-               </Link>
-            ))}
+
+                        {/* Mini Stats */}
+                        <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">
+                           <div className="text-center">
+                              <div className="text-lg font-black text-white">{m.watchlist.length}</div>
+                              <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
+                           </div>
+                           <div className="text-center">
+                              <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
+                              <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
+                           </div>
+                           <div className="text-center">
+                              <div className="text-lg font-black text-white">{m.lists.length}</div>
+                              <div className="text-[10px] font-bold uppercase text-gray-600">Lists</div>
+                           </div>
+                        </div>
+
+                        {/* Favorites Preview */}
+                        <div className="flex gap-2 justify-center">
+                           {m.topFavorites.slice(0, 3).map((s, i) => (
+                              <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
+                                 <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" />
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  </Link>
+               );
+            })}
          </div>
       </div>
    );
@@ -2838,10 +2870,28 @@ const AuthPage = () => {
                   </div>
 
                   {!isLogin && (
-                     <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('emailAddr')}</label>
-                        <Input type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} className="bg-black/30 border-white/10 focus:border-accentGreen rounded-lg" />
-                     </div>
+                     <>
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('emailAddr')}</label>
+                           <Input type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} className="bg-black/30 border-white/10 focus:border-accentGreen rounded-lg" />
+                        </div>
+
+                        <div className="space-y-1">
+                           <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Bio</label>
+                           <textarea
+                              value={editBio}
+                              onChange={e => setEditBio(e.target.value)}
+                              className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accentGreen min-h-[100px] resize-none"
+                           />
+                        </div>
+
+                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                           <p className="text-xs text-gray-400 flex items-center gap-2">
+                              <ImageIcon size={14} />
+                              <span>Profile theme is automatically set to your #1 Favorite Show.</span>
+                           </p>
+                        </div>
+                     </>
                   )}
 
                   <div className="space-y-1">
