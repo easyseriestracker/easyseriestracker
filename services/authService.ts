@@ -640,12 +640,14 @@ export const likeReview = async (reviewId: string, userId: string) => {
     }
 
     // Update the review with the new likes array
+    const updateData: any = { 
+      likes: updatedLikes 
+    };
+    
+    // Try to update without timestamp first
     const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
-      .update({ 
-        likes: updatedLikes,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', reviewId)
       .select()
       .single();
@@ -686,12 +688,14 @@ export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, '
     const updatedReplies = [...currentReplies, newReply];
 
     // Update the review with the new replies array
+    const updateData: any = {
+      replies: updatedReplies
+    };
+    
+    // Try to update without timestamp first
     const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
-      .update({ 
-        replies: updatedReplies,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', reviewId)
       .select()
       .single();
