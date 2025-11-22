@@ -99,6 +99,10 @@ create policy "Users can update own ratings."
   on ratings for update
   using ( auth.uid() = user_id );
 
+create policy "Users can delete own ratings."
+  on ratings for delete
+  using ( auth.uid() = user_id );
+
 -- LISTS TABLE
 create table public.lists (
   id uuid default uuid_generate_v4() primary key,

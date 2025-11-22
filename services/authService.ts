@@ -326,13 +326,22 @@ export const rateShow = async (showId: number, rating: number) => {
       .delete()
       .eq('user_id', user.id)
       .eq('show_id', showId);
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting rating:', error);
+      throw error;
+    }
   } else {
-    // Otherwise upsert the rating
+    // Otherwise upsert the rating - specify onConflict to handle unique constraint
     const { error } = await supabase
       .from('ratings')
-      .upsert({ user_id: user.id, show_id: showId, rating });
-    if (error) throw error;
+      .upsert(
+        { user_id: user.id, show_id: showId, rating },
+        { onConflict: 'user_id,show_id' }
+      );
+    if (error) {
+      console.error('Error upserting rating:', error);
+      throw error;
+    }
   }
 };
 
