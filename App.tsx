@@ -545,11 +545,21 @@ const Home = () => {
                getShowsByIds(commTrackIds)
             ]);
 
-            setSections(prev => [
-               ...prev,
-               { title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true },
-               { title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true }
-            ]);
+            // Only add if not already present (prevent duplicates)
+            setSections(prev => {
+               const hasCommTop = prev.some(s => s.link === "/browse?sort=site_rating");
+               const hasMostTracked = prev.some(s => s.link === "/browse?sort=site_pop");
+
+               const newSections = [];
+               if (!hasCommTop && commTop.length > 0) {
+                  newSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
+               }
+               if (!hasMostTracked && commTrack.length > 0) {
+                  newSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
+               }
+
+               return [...prev, ...newSections];
+            });
          } catch (error) {
             console.error("Failed to load community sections", error);
          }
@@ -821,7 +831,7 @@ const Home = () => {
                      <div className="flex gap-3">
                         <button
                            onClick={() => setShowRatingReminder(false)}
-                           className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-sm text-gray-400 hover:text-white transition"
+                           className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white hover:text-accentGreen transition-all duration-200 border border-white/20 hover:border-accentGreen/50 hover:shadow-lg hover:shadow-accentGreen/10"
                         >
                            Maybe Later
                         </button>
@@ -1063,7 +1073,7 @@ const BrowsePage = () => {
                            <button
                               key={g.id}
                               onClick={() => toggleGenre(g.id)}
-                              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${state === 'selected'
+                              className={`px - 4 py - 2 rounded - full text - sm font - medium transition - all duration - 300 border ${state === 'selected'
                                  ? 'bg-accentGreen text-black border-accentGreen shadow-[0_0_15px_rgba(0,224,84,0.3)]'
                                  : state === 'excluded'
                                     ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
