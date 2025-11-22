@@ -514,18 +514,12 @@ const Home = () => {
                setHeroCandidates(validTrending.slice(0, 5));
             }
             setSections([
-               { title: t('globalTrending'), data: trending.slice(0, 4), link: "/browse?sort=popularity.desc" }
-            ]);
-            setDataLoaded(true); // Show UI immediately
-         }
-
-         // 3. Load Community Data (Slower, requires DB + TMDB)
-         try {
-            const commTopList = await getCommunityFavoriteIds();
-            const commTopIds = commTopList.slice(0, 4).map(x => x.id);
+               { title: t('globalTrending'), data: trending.slice(0, 6), link: "/browse?sort=popularity.desc" }
+   const commTopList = await getCommunityFavoriteIds();
+            const commTopIds = commTopList.slice(0, 6).map(x => x.id);
 
             const commTrackList = await getMostWatchlistedIds();
-            const commTrackIds = commTrackList.slice(0, 4).map(x => x.id);
+            const commTrackIds = commTrackList.slice(0, 6).map(x => x.id);
 
             const [commTop, commTrack] = await Promise.all([
                getShowsByIds(commTopIds),
@@ -562,9 +556,9 @@ const Home = () => {
 
          setSections(prev => [
             ...prev,
-            { title: t('timelessClassics'), data: classics.slice(0, 4), link: "/browse?genre=18" },
-            { title: t('comedyGold'), data: comedy.slice(0, 4), link: "/browse?genre=35" },
-            { title: t('scifiAdventures'), data: scifi.slice(0, 4), link: "/browse?genre=10765" }
+            { title: t('timelessClassics'), data: classics.slice(0, 6), link: "/browse?genre=18" },
+            { title: t('comedyGold'), data: comedy.slice(0, 6), link: "/browse?genre=35" },
+            { title: t('scifiAdventures'), data: scifi.slice(0, 6), link: "/browse?genre=10765" }
          ]);
       };
       loadData();
@@ -760,15 +754,15 @@ const Home = () => {
 
             <div className="space-y-16">
                {sections.map((section, idx) => (
-                  <div key={idx} className={section.isCommunity ? "p-6 rounded-3xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20" : ""}>
-                     <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
-                        <h2 className={`text-2xl font-black uppercase tracking-tighter ${section.isCommunity ? 'text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-white'}`}>{section.title}</h2>
+                  <div key={idx} className={section.isCommunity ? "mb-12 p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20" : "mb-12"}>
+                     <div className="flex items-end justify-between mb-4 border-b border-white/5 pb-2">
+                        <h2 className={`text-xl font-black uppercase tracking-tighter ${section.isCommunity ? 'text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-white'}`}>{section.title}</h2>
                         <Link to={section.link} className="text-xs font-bold text-accentGreen hover:text-white uppercase tracking-widest flex items-center gap-1">
                            {t('viewAll')} <ChevronRight size={14} />
                         </Link>
                      </div>
                      {section.data.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                            {section.data.map(show => <ShowCard key={show.id} show={show} />)}
                         </div>
                      ) : (
