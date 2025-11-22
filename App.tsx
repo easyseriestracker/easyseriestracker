@@ -2035,7 +2035,15 @@ const ShowPage = () => {
                      <div className="flex justify-center mb-2">
                         <StarRating rating={userRating} onRate={handleRate} size={24} />
                      </div>
-                     <div className="text-sm font-medium text-gray-300">{userRating > 0 ? `${userRating}/5` : 'Rate this show'}</div>
+                     <div className="text-sm font-medium text-gray-300 mb-3">{userRating > 0 ? `${userRating}/5` : 'Rate this show'}</div>
+                     {userRating > 0 && (
+                        <button
+                           onClick={() => handleRate(0)}
+                           className="text-xs font-bold text-red-400 hover:text-red-300 transition flex items-center gap-1 mx-auto"
+                        >
+                           <X size={12} /> Remove Rating
+                        </button>
+                     )}
                   </div>
 
                   {/* Watch Providers */}

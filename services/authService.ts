@@ -319,7 +319,29 @@ export const rateShow = async (showId: number, rating: number) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase.from('ratings').upsert({ user_id: user.id, show_id: showId, rating });
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('ratings')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) return;
+
+  let ratings = profile.ratings || {};
+
+  // Remove rating if set to 0
+  if (rating === 0) {
+    delete ratings[showId];
+  } else {
+    ratings[showId] = rating;
+  }
+
+  await supabase
+    .from('profiles')
+    .update({ ratings })
+    .eq('id', user.id);
 };
 
 // --- LISTS SYSTEM ---
