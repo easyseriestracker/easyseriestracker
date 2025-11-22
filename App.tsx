@@ -6,7 +6,7 @@ import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from
 import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
-import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail } from 'lucide-react';
+import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu } from 'lucide-react';
 import Turnstile from 'react-turnstile';
 
 // --- TRANSLATIONS ---
@@ -276,6 +276,7 @@ const Navbar = () => {
    const { user } = useContext(AuthContext);
    const { t } = useTranslation();
    const [isScrolled, setIsScrolled] = useState(false);
+   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
    const location = useLocation();
 
    useEffect(() => {
@@ -284,30 +285,41 @@ const Navbar = () => {
       return () => window.removeEventListener('scroll', handleScroll);
    }, []);
 
+   useEffect(() => {
+      setIsMobileMenuOpen(false);
+   }, [location]);
+
    return (
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-[#14181c]/90 backdrop-blur-xl border-b border-white/5 py-2 shadow-2xl' : 'bg-transparent py-6'}`}>
          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-            <Link to="/" className="group flex items-center gap-3">
+            <Link to="/" className="group flex items-center gap-3 z-50 relative">
                <Logo size="sm" />
                <span className="text-lg font-black tracking-tighter uppercase text-white group-hover:text-accentGreen transition-colors">
                   Easy Series <span className="font-light text-gray-400 group-hover:text-white transition-colors">Tracker</span>
                </span>
             </Link>
 
-            <div className="flex items-center gap-8">
-               <div className="hidden md:flex items-center gap-6">
+            <button
+               className="md:hidden text-white z-50 relative hover:text-accentGreen transition-colors"
+               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+               {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+
+            <div className="hidden md:flex items-center gap-8">
+               <div className="flex items-center gap-6">
                   <Link to="/members" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/members' ? 'text-white' : 'text-gray-400'}`}>{t('community')}</Link>
                   <Link to="/browse" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/browse' ? 'text-white' : 'text-gray-400'}`}>{t('discoverShows') || 'Discover'}</Link>
                </div>
 
                {user ? (
                   <>
-                     <div className="hidden md:flex items-center gap-6">
+                     <div className="flex items-center gap-6">
                         <Link to="/watchlist" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/watchlist' ? 'text-white' : 'text-gray-400'}`}>{t('watchlist')}</Link>
                      </div>
-                     <div className="h-5 w-px bg-white/10 hidden md:block" />
+                     <div className="h-5 w-px bg-white/10 block" />
                      <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition group pl-2">
-                        <div className="text-right hidden md:block">
+                        <div className="text-right block">
                            <span className="block text-xs font-bold text-white group-hover:text-accentGreen transition-colors">{user.username}</span>
                         </div>
                         <div className={`w-9 h-9 rounded-full ring-2 ring-transparent group-hover:ring-accentGreen overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)}`}>
@@ -322,6 +334,27 @@ const Navbar = () => {
                         <Button variant="primary" className="!py-2 !px-5 !rounded-full text-xs">{t('joinNow')}</Button>
                      </Link>
                   </div>
+               )}
+            </div>
+
+            <div className={`fixed inset-0 bg-[#14181c]/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8 transition-all duration-500 md:hidden ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+               <Link to="/members" className="text-2xl font-black uppercase tracking-tighter text-white hover:text-accentGreen transition-colors">{t('community')}</Link>
+               <Link to="/browse" className="text-2xl font-black uppercase tracking-tighter text-white hover:text-accentGreen transition-colors">{t('discoverShows') || 'Discover'}</Link>
+               {user ? (
+                  <>
+                     <Link to="/watchlist" className="text-2xl font-black uppercase tracking-tighter text-white hover:text-accentGreen transition-colors">{t('watchlist')}</Link>
+                     <Link to="/profile" className="flex items-center gap-3 text-2xl font-black uppercase tracking-tighter text-white hover:text-accentGreen transition-colors">
+                        <div className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)}`}>
+                           {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
+                        </div>
+                        Profile
+                     </Link>
+                  </>
+               ) : (
+                  <>
+                     <Link to="/login" className="text-2xl font-black uppercase tracking-tighter text-white hover:text-accentGreen transition-colors">{t('login')}</Link>
+                     <Link to="/register" className="text-2xl font-black uppercase tracking-tighter text-accentGreen hover:text-white transition-colors">{t('joinNow')}</Link>
+                  </>
                )}
             </div>
          </div>
@@ -414,7 +447,7 @@ const RatedShowCard = ({ id, rating }: { id: number, rating: number }) => {
 const SimpleShowCard = ({ id }: { id: number }) => {
    const [show, setShow] = useState<ShowDetails | null>(null);
    const [error, setError] = useState(false);
-   useEffect(() => { 
+   useEffect(() => {
       if (!id || isNaN(id)) {
          setError(true);
          return;
@@ -1613,7 +1646,7 @@ const ShowPage = () => {
                </div>
 
                {/* Right Sidebar (Poster & Actions) */}
-               <div className="md:col-span-3 space-y-6">
+               <div className="md:col-span-3 space-y-6 order-first md:order-none">
                   <div className="rounded-lg overflow-hidden shadow-2xl border border-white/20 aspect-[2/3] relative group">
                      <img src={getImageUrl(show.poster_path)} className="w-full h-full object-cover" />
                   </div>
@@ -1866,16 +1899,16 @@ const AuthPage = () => {
          navigate('/');
       } catch (err: any) {
          let errorMessage = err.message;
-         
+
          // Handle specific error messages
          if (err.message === "Invalid credentials.") {
             errorMessage = t('incorrectCreds');
-         } else if (err.message?.toLowerCase().includes('email signups are disabled') || 
-                    err.message?.toLowerCase().includes('email logins are disabled') ||
-                    err.message?.toLowerCase().includes('email authentication is currently disabled')) {
+         } else if (err.message?.toLowerCase().includes('email signups are disabled') ||
+            err.message?.toLowerCase().includes('email logins are disabled') ||
+            err.message?.toLowerCase().includes('email authentication is currently disabled')) {
             errorMessage = 'Email authentication is currently disabled. Please check your Supabase dashboard settings to enable email authentication.';
          }
-         
+
          setError(errorMessage);
       }
    };
