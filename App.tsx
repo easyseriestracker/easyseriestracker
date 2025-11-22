@@ -486,7 +486,7 @@ const SimpleShowCard = ({ id }: { id: number }) => {
 // --- Main Components ---
 
 const Home = () => {
-   const { user } = useContext(AuthContext);
+   const { user, refreshUser } = useContext(AuthContext);
    const [sections, setSections] = useState<{ title: string, data: Show[], link: string, isCommunity?: boolean }[]>([]);
    const [heroCandidates, setHeroCandidates] = useState<Show[]>([]);
    const [heroIndex, setHeroIndex] = useState(0);
@@ -496,6 +496,9 @@ const Home = () => {
    const [searchQuery, setSearchQuery] = useState('');
    const [searchResults, setSearchResults] = useState<Show[]>([]);
    const [dataLoaded, setDataLoaded] = useState(false);
+   const [showRatingReminder, setShowRatingReminder] = useState(false);
+   const [reminderShow, setReminderShow] = useState<ShowDetails | null>(null);
+   const [reminderRating, setReminderRating] = useState(0);
    const { t } = useTranslation();
 
    useEffect(() => {
@@ -591,6 +594,37 @@ const Home = () => {
       const timeout = setTimeout(search, 300);
       return () => clearTimeout(timeout);
    }, [searchQuery]);
+
+   useEffect(() => {
+      // Rating reminder logic: show every 2nd visit
+      if (user && user.watchlist.length > 0) {
+         const visitCount = parseInt(localStorage.getItem('visitCount') || '0');
+         const newVisitCount = visitCount + 1;
+         localStorage.setItem('visitCount', newVisitCount.toString());
+
+         // Show reminder every 2nd visit
+         if (newVisitCount % 2 === 0) {
+            // Pick random unrated show from watchlist
+            const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
+            if (unratedShows.length > 0) {
+               const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
+               getShowDetails(randomShow.showId).then(show => {
+                  setReminderShow(show);
+                  setShowRatingReminder(true);
+               });
+            }
+         }
+      }
+   }, [user]);
+
+   const handleReminderRate = async (rating: number) => {
+      if (reminderShow && user) {
+         await rateShow(reminderShow.id, rating);
+         await refreshUser();
+         setShowRatingReminder(false);
+         setReminderShow(null);
+      }
+   };
 
    // Removed blocking loading state to allow incremental rendering
    if (!dataLoaded && sections.length === 0) {
@@ -2079,92 +2113,7 @@ const Tracking = () => {
    );
 }
 
-const Home = () => {
-   const [trendingShows, setTrendingShows] = useState<Show[]>([]);
-   const { user, refreshUser } = useContext(AuthContext);
-   const { t } = useTranslation();
-   const [showRatingReminder, setShowRatingReminder] = useState(false);
-   const [reminderShow, setReminderShow] = useState<ShowDetails | null>(null);
-   const [reminderRating, setReminderRating] = useState(0);
-   const navigate = useNavigate();
 
-   useEffect(() => {
-      getTrendingShows().then(setTrendingShows);
-   }, []);
-
-   useEffect(() => {
-      // Rating reminder logic: show every 2nd visit
-      if (user && user.watchlist.length > 0) {
-         const visitCount = parseInt(localStorage.getItem('visitCount') || '0');
-         const newVisitCount = visitCount + 1;
-         localStorage.setItem('visitCount', newVisitCount.toString());
-
-         // Show reminder every 2nd visit
-         if (newVisitCount % 2 === 0) {
-            // Pick random unrated show from watchlist
-            const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
-            if (unratedShows.length > 0) {
-               const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
-               getShowDetails(randomShow.showId).then(show => {
-                  setReminderShow(show);
-                  setShowRatingReminder(true);
-               });
-            }
-         }
-      }
-   }, [user]);
-
-   const handleReminderRate = async (rating: number) => {
-      if (reminderShow && user) {
-         await rateShow(reminderShow.id, rating);
-         await refreshUser();
-         setShowRatingReminder(false);
-         setReminderShow(null);
-      }
-   };
-
-   return (
-      <div className="pt-32 px-6 max-w-7xl mx-auto min-h-screen">
-         <h1 className="text-5xl font-black text-white uppercase tracking-tighter mb-12 text-glow">{t('community')}</h1>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {members.map(m => (
-               <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
-                  <div className="flex items-center gap-4 mb-6">
-                     <div className={`w-16 h-16 rounded-full border-2 border-white/10 group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl`}>
-                        {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
-                     </div>
-                     <div>
-                        <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
-                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
-                     </div>
-                  </div>
-
-                  {/* Mini Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-6 border-t border-white/5 pt-4">
-                     <div className="text-center">
-                        <div className="text-lg font-black text-white">{m.watchlist.length}</div>
-                        <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
-                     </div>
-                     <div className="text-center">
-                        <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
-                        <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
-                     </div>
-                  </div>
-
-                  {/* Favorites Preview */}
-                  <div className="flex gap-2 justify-center">
-                     {m.topFavorites.slice(0, 3).map((s, i) => (
-                        <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
-                           <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" />
-                        </div>
-                     ))}
-                  </div>
-               </Link>
-            ))}
-         </div>
-      </div>
-   );
-};
 
 const Members = () => {
    const [members, setMembers] = useState<User[]>([]);
