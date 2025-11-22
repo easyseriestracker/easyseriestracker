@@ -6,7 +6,7 @@ import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from
 import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
-import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
+import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
 import Turnstile from 'react-turnstile';
 
 // --- TRANSLATIONS ---
@@ -514,52 +514,36 @@ const Home = () => {
                setHeroCandidates(validTrending.slice(0, 5));
             }
             setSections([
-               { title: t('globalTrending'), data: trending.slice(0, 6), link: "/browse?sort=popularity.desc" }
+               { title: t('globalTrending'), data: trending.slice(0, 4), link: "/browse?sort=popularity.desc" }
             ]);
             setDataLoaded(true); // Show UI immediately
          }
 
-         // 2. Load other TMDB categories in parallel
-         const [classics, comedy, scifi] = await Promise.all([
-            getClassicShows(),
-            getComedyShows(),
-            getSciFiShows()
-         ]);
-
-         setSections(prev => [
-            ...prev,
-            { title: t('hallOfFame'), data: classics.slice(0, 6), link: "/browse?sort=vote_average.desc" },
-            { title: t('mindBenders'), data: scifi.slice(0, 6), link: "/browse?sort=popularity.desc&genre=scifi" },
-            { title: t('sitcoms'), data: comedy.slice(0, 6), link: "/browse?sort=popularity.desc&genre=comedy" }
-         ]);
-
          // 3. Load Community Data (Slower, requires DB + TMDB)
          try {
             const commTopList = await getCommunityFavoriteIds();
-            const commTopIds = commTopList.slice(0, 6).map(x => x.id);
+            const commTopIds = commTopList.slice(0, 4).map(x => x.id);
 
             const commTrackList = await getMostWatchlistedIds();
-            const commTrackIds = commTrackList.slice(0, 6).map(x => x.id);
+            const commTrackIds = commTrackList.slice(0, 4).map(x => x.id);
 
             const [commTop, commTrack] = await Promise.all([
                getShowsByIds(commTopIds),
                getShowsByIds(commTrackIds)
             ]);
 
-            // Only add if not already present (prevent duplicates)
+            // Insert community sections right after Global Trending
             setSections(prev => {
-               const hasCommTop = prev.some(s => s.link === "/browse?sort=site_rating");
-               const hasMostTracked = prev.some(s => s.link === "/browse?sort=site_pop");
+               const trending = prev[0]; // Global Trending
+               const rest = prev.slice(1); // Others
 
-               const newSections = [];
-               if (!hasCommTop && commTop.length > 0) {
-                  newSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
-               }
-               if (!hasMostTracked && commTrack.length > 0) {
-                  newSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
-               }
-
-               return [...prev, ...newSections];
+               return [
+                  trending,
+                  // Community sections go here
+                  ...(commTop.length > 0 ? [{ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true }] : []),
+                  ...(commTrack.length > 0 ? [{ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true }] : []),
+                  ...rest
+               ];
             });
 
             // Load community lists
@@ -568,6 +552,20 @@ const Home = () => {
          } catch (error) {
             console.error("Failed to load community sections", error);
          }
+
+         // 4. Load other TMDB categories at the end
+         const [classics, comedy, scifi] = await Promise.all([
+            getClassicShows(),
+            getComedyShows(),
+            getSciFiShows()
+         ]);
+
+         setSections(prev => [
+            ...prev,
+            { title: t('timelessClassics'), data: classics.slice(0, 4), link: "/browse?genre=18" },
+            { title: t('comedyGold'), data: comedy.slice(0, 4), link: "/browse?genre=35" },
+            { title: t('scifiAdventures'), data: scifi.slice(0, 4), link: "/browse?genre=10765" }
+         ]);
       };
       loadData();
    }, [t]);
@@ -760,7 +758,7 @@ const Home = () => {
                )}
             </div>
 
-            <div className="space-y-20">
+            <div className="space-y-16">
                {sections.map((section, idx) => (
                   <div key={idx} className={section.isCommunity ? "p-6 rounded-3xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20" : ""}>
                      <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
@@ -770,7 +768,7 @@ const Home = () => {
                         </Link>
                      </div>
                      {section.data.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                            {section.data.map(show => <ShowCard key={show.id} show={show} />)}
                         </div>
                      ) : (
@@ -780,9 +778,9 @@ const Home = () => {
                ))}
             </div>
 
-            {/* Community Lists Section */}
+            {/* Community Lists Section - After Global Trending */}
             {communityLists.length > 0 && (
-               <div className="mt-20">
+               <div className="mt-16 mb-16">
                   <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
                      <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
                   </div>
@@ -1374,10 +1372,10 @@ const ListDetailPage = () => {
 
          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-16">
             {list.items.map((item, index) => (
-               <div key={item.id} className="relative">
+               <div key={item.id} className="relative group">
                   <ShowCard show={item} />
                   {user && user.id === list.userId && (
-                     <div className="absolute -top-2 -right-2 flex gap-1 z-20">
+                     <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none">
                         {index > 0 && (
                            <button
                               onClick={async () => {
@@ -1386,11 +1384,13 @@ const ListDetailPage = () => {
                                  await reorderListItems(list.id, newItems);
                                  setList(await getListById(list.id));
                               }}
-                              className="w-6 h-6 bg-accentGreen hover:bg-accentGreen/80 rounded-full flex items-center justify-center shadow-lg transition"
+                              className="pointer-events-auto w-8 h-8 bg-black/80 hover:bg-accentGreen rounded-full flex items-center justify-center shadow-xl transition border-2 border-white/20 hover:border-accentGreen"
+                              title="Move left"
                            >
-                              <ChevronUp size={14} className="text-black" />
+                              <ChevronLeft size={18} className="text-white" />
                            </button>
                         )}
+                        <div className="flex-1" />
                         {index < list.items.length - 1 && (
                            <button
                               onClick={async () => {
@@ -1399,9 +1399,10 @@ const ListDetailPage = () => {
                                  await reorderListItems(list.id, newItems);
                                  setList(await getListById(list.id));
                               }}
-                              className="w-6 h-6 bg-accentGreen hover:bg-accentGreen/80 rounded-full flex items-center justify-center shadow-lg transition"
+                              className="pointer-events-auto w-8 h-8 bg-black/80 hover:bg-accentGreen rounded-full flex items-center justify-center shadow-xl transition border-2 border-white/20 hover:border-accentGreen"
+                              title="Move right"
                            >
-                              <ChevronDown size={14} className="text-black" />
+                              <ChevronRight size={18} className="text-white" />
                            </button>
                         )}
                      </div>
