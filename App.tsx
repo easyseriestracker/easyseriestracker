@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, Suggestion } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, Suggestion } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -79,7 +79,10 @@ const TRANSLATIONS = {
       incorrectCreds: "Incorrect email or password",
       rememberMe: "Remember me",
       dontHaveAccount: "Don't have an account?",
-      alreadyHaveAccount: "Already have an account?"
+      alreadyHaveAccount: "Already have an account?",
+      suggestions: "Suggestions",
+      noSuggestions: "No suggestions yet.",
+      delete: "Delete"
    },
    tr: {
       community: "Üyeler",
@@ -149,7 +152,10 @@ const TRANSLATIONS = {
       incorrectCreds: "Hatalı e-posta veya şifre",
       rememberMe: "Beni hatırla",
       dontHaveAccount: "Hesabın yok mu?",
-      alreadyHaveAccount: "Zaten hesabın var mı?"
+      alreadyHaveAccount: "Zaten hesabın var mı?",
+      suggestions: "Öneriler",
+      noSuggestions: "Henüz öneri yok.",
+      delete: "Sil"
    }
 };
 
@@ -574,7 +580,7 @@ const Home = () => {
             // Check for duplicates by title to avoid adding same section twice
             const existingTitles = prev.map(s => s.title);
             const newSections = [];
-            
+
             if (!existingTitles.includes(t('hallOfFame')) && classics.length > 0) {
                newSections.push({ title: t('hallOfFame'), data: classics.slice(0, 6), link: "/browse?genre=18" });
             }
@@ -584,7 +590,7 @@ const Home = () => {
             if (!existingTitles.includes(t('mindBenders')) && scifi.length > 0) {
                newSections.push({ title: t('mindBenders'), data: scifi.slice(0, 6), link: "/browse?genre=10765" });
             }
-            
+
             return [...prev, ...newSections];
          });
       };
@@ -797,7 +803,7 @@ const Home = () => {
                            <div className="text-center text-gray-500 text-sm py-10 font-bold">No data yet.</div>
                         )}
                      </div>
-                     
+
                      {/* Community Lists Section - Right after Global Trending */}
                      {idx === 0 && communityLists.length > 0 && (
                         <div className="mb-16">
@@ -1733,6 +1739,13 @@ const Profile = () => {
       }
    };
 
+   const handleDeleteSuggestion = async (id: string) => {
+      if (window.confirm(t('delete') + '?')) {
+         await deleteSuggestion(id);
+         setSuggestions(suggestions.filter(s => s.id !== id));
+      }
+   };
+
    if (!profileUser) return null;
 
    const populatedWatchlist = profileUser.watchlist;
@@ -1761,8 +1774,8 @@ const Profile = () => {
             {isOwnProfile && (
                <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 justify-center md:justify-start w-full md:w-auto">
                   {currentUser && currentUser.id === '9f05df16-4a02-46cc-a45c-e0ad1aa53892' && (
-                     <Button 
-                        variant="secondary" 
+                     <Button
+                        variant="secondary"
                         className="!text-xs sm:!text-sm"
                         onClick={async () => {
                            setShowSuggestionsModal(true);
@@ -1770,7 +1783,7 @@ const Profile = () => {
                            setSuggestions(suggs);
                         }}
                      >
-                        <Bell size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Suggestions</span> {suggestions.length > 0 && `(${suggestions.length})`}
+                        <Bell size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('suggestions')}</span> {suggestions.length > 0 && `(${suggestions.length})`}
                      </Button>
                   )}
                   <Button variant="secondary" className="!text-xs sm:!text-sm" onClick={() => setShowEditProfile(true)}><Edit2 size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">{t('editProfile')}</span></Button>
@@ -2099,10 +2112,10 @@ const Profile = () => {
          )}
 
          {showSuggestionsModal && (
-            <Modal title="Suggestions" onClose={() => setShowSuggestionsModal(false)}>
+            <Modal title={t('suggestions')} onClose={() => setShowSuggestionsModal(false)}>
                <div className="max-h-[60vh] overflow-y-auto space-y-4">
                   {suggestions.length === 0 ? (
-                     <div className="text-center text-gray-500 py-8">No suggestions yet.</div>
+                     <div className="text-center text-gray-500 py-8">{t('noSuggestions')}</div>
                   ) : (
                      suggestions.map(s => (
                         <div key={s.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
@@ -2113,9 +2126,14 @@ const Profile = () => {
                                  </div>
                                  <span className="font-bold text-white">{s.fromUsername || 'Anonymous'}</span>
                               </div>
-                              <span className="text-xs text-gray-500">
-                                 {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                 <span className="text-xs text-gray-500">
+                                    {new Date(s.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                 </span>
+                                 <button onClick={() => handleDeleteSuggestion(s.id)} className="text-gray-500 hover:text-red-500 transition">
+                                    <Trash2 size={14} />
+                                 </button>
+                              </div>
                            </div>
                            <p className="text-gray-300 text-sm whitespace-pre-wrap">{s.message}</p>
                         </div>
@@ -2169,22 +2187,22 @@ const ShowPage = () => {
    const handleRate = async (r: number) => {
       if (!user) return navigate('/login');
       if (!id) return;
-      
+
       const showId = parseInt(id);
-      
+
       // Set flag to prevent useEffect from overriding our update
       isRatingUpdatingRef.current = true;
-      
+
       try {
          // Call rateShow to update database
          await rateShow(showId, r);
-         
+
          // Immediately update local state
          setUserRating(r);
-         
+
          // Refresh user data
          await refreshUser();
-         
+
          // After refresh, get updated user and sync rating
          const updatedUser = await getCurrentUser();
          if (updatedUser) {
@@ -2455,7 +2473,7 @@ const ShowPage = () => {
                      {user.lists.map(l => (
                         <button
                            key={l.id}
-                           onClick={async () => { await addShowToList(l.id, show!); setShowListModal(false); alert(`Added to ${l.name}`); }}
+                           onClick={async () => { await addShowToList(l.id, show!); setShowListModal(false); }}
                            className="w-full text-left p-3 bg-white/5 hover:bg-white/10 rounded border border-white/5 flex justify-between items-center group"
                         >
                            <span className="font-bold text-white group-hover:text-accentGreen">{l.name}</span>
@@ -2700,7 +2718,7 @@ const AuthPage = () => {
 
                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-1">
-                     <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('username')} / Email</label>
+                     <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('username')}</label>
                      <Input value={username} onChange={(e: any) => setUsername(e.target.value)} className="bg-black/30 border-white/10 focus:border-accentGreen rounded-lg" />
                   </div>
 

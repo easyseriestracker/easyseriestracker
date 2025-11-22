@@ -205,6 +205,26 @@ export const getUserById = async (userId: string): Promise<User | undefined> => 
     .eq('user_id', userId);
   user.watchlist = watchlist?.map(w => ({ showId: w.show_id, addedAt: w.added_at })) || [];
 
+  // Fetch Lists for public profile
+  const { data: lists } = await supabase
+    .from('lists')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_private', false); // Only public lists
+
+  user.lists = lists?.map(l => ({
+    id: l.id,
+    userId: l.user_id,
+    username: l.username,
+    name: l.name,
+    description: l.description,
+    isPrivate: l.is_private,
+    items: l.items || [],
+    likes: l.likes || [],
+    comments: l.comments || [],
+    createdAt: l.created_at
+  })) || [];
+
   return user;
 };
 
@@ -710,5 +730,10 @@ export const getSuggestions = async (): Promise<Suggestion[]> => {
     message: s.message,
     createdAt: s.created_at
   }));
+};
+
+export const deleteSuggestion = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('suggestions').delete().eq('id', id);
+  if (error) throw error;
 };
 
