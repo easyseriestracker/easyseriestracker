@@ -51,7 +51,7 @@ export const updateUser = async (updatedUser: User) => {
     bio: updatedUser.bio,
     background_theme: updatedUser.backgroundTheme,
     settings: updatedUser.settings,
-    top_favorites: updatedUser.topFavorites,
+    // Note: top_favorites should be updated via updateTopFavorites() only
   }).eq('id', updatedUser.id);
 };
 
