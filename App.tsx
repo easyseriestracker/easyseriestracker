@@ -1873,7 +1873,7 @@ const Profile = () => {
          <div className="absolute inset-0 min-h-screen overflow-hidden pointer-events-none">
             {themeImage && (
                <>
-                  <div className="absolute inset-0 bg-cover bg-center opacity-98 scale-105" style={{ backgroundImage: `url(${themeImage})` }}></div>
+                  <div className="absolute inset-0 bg-cover bg-center opacity-98 scale-100" style={{ backgroundImage: `url(${themeImage})` }}></div>
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#14181c]/50 to-[#14181c]"></div>
                </>
             )}
