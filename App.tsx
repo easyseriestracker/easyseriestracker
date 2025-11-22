@@ -2871,7 +2871,6 @@ const AuthPage = () => {
    const [password, setPassword] = useState('');
    const [error, setError] = useState('');
    const [rememberMe, setRememberMe] = useState(false);
-   const [editBio, setEditBio] = useState('');
 
    const [bgIndex, setBgIndex] = useState(0);
    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -2977,28 +2976,10 @@ const AuthPage = () => {
                   </div>
 
                   {!isLogin && (
-                     <>
-                        <div className="space-y-1">
-                           <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('emailAddr')}</label>
-                           <Input type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} className="bg-black/30 border-white/10 focus:border-accentGreen rounded-lg" />
-                        </div>
-
-                        <div className="space-y-1">
-                           <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Bio</label>
-                           <textarea
-                              value={editBio}
-                              onChange={e => setEditBio(e.target.value)}
-                              className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-accentGreen min-h-[100px] resize-none"
-                           />
-                        </div>
-
-                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                           <p className="text-xs text-gray-400 flex items-center gap-2">
-                              <ImageIcon size={14} />
-                              <span>Profile theme is automatically set to your #1 Favorite Show.</span>
-                           </p>
-                        </div>
-                     </>
+                     <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest">{t('emailAddr')}</label>
+                        <Input type="email" value={email} onChange={(e: any) => setEmail(e.target.value)} className="bg-black/30 border-white/10 focus:border-accentGreen rounded-lg" />
+                     </div>
                   )}
 
                   <div className="space-y-1">
