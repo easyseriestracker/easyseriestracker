@@ -2786,12 +2786,42 @@ const Tracking = () => {
 
 
 
+// Son çevrimiçi olma süresini hesaplayan yardımcı fonksiyon
+const getLastSeenText = (lastSeen: string | undefined) => {
+  if (!lastSeen) return 'Never';
+  
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - lastSeenDate.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  return `${Math.floor(diffInSeconds / 86400)}d ago`;
+};
+
 const Members = () => {
    const [members, setMembers] = useState<User[]>([]);
    const { t } = useTranslation();
 
    useEffect(() => {
-      getAllMembers().then(setMembers);
+      const loadMembers = async () => {
+         const allMembers = await getAllMembers();
+         // Çevrimiçi kullanıcıları en üste al
+         const sortedMembers = [...allMembers].sort((a, b) => {
+            const aIsOnline = a.isOnline || false;
+            const bIsOnline = b.isOnline || false;
+            if (aIsOnline && !bIsOnline) return -1;
+            if (!aIsOnline && bIsOnline) return 1;
+            return 0;
+         });
+         setMembers(sortedMembers);
+      };
+      
+      loadMembers();
+      // Her 30 saniyede bir güncelle
+      const interval = setInterval(loadMembers, 30000);
+      return () => clearInterval(interval);
    }, []);
 
    return (
@@ -2802,6 +2832,8 @@ const Members = () => {
                const memberTheme = m.topFavorites?.[0]?.backdrop_path
                   ? getImageUrl(m.topFavorites[0].backdrop_path, 'w500')
                   : null;
+               const isOnline = (m as any).isOnline || false;
+               const lastSeenText = getLastSeenText(m.lastSeen);
 
                return (
                   <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
@@ -2815,20 +2847,25 @@ const Members = () => {
 
                      <div className="relative z-10">
                         <div className="flex items-center gap-4 mb-6">
-                           <div className={`w-16 h-16 rounded-full border-2 border-white/10 group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl`}>
-                              {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" /> : m.username[0].toUpperCase()}
-                           </div>
-                           <div>
-                              <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
-                              <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
-                              {m.lastSeen && (Date.now() - new Date(m.lastSeen).getTime() < 5 * 60 * 1000) && (
-                                 <div className="flex items-center gap-1.5 mt-1">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Online</span>
-                                 </div>
+                           <div className={`w-16 h-16 rounded-full border-2 ${isOnline ? 'border-green-500' : 'border-white/10'} group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl relative`}>
+                              {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" alt={m.username} /> : m.username[0].toUpperCase()}
+                              {isOnline && (
+                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1f2329] animate-pulse"></div>
                               )}
                            </div>
-                        </div>
+                           <div>
+                              <div className="font-black text-white text-xl group-hover:text-accentGreen transition">
+                                 {m.username}
+                                 {isOnline && (
+                                    <span className="ml-2 text-xs font-normal text-green-500">• Online</span>
+                                 )}
+                              </div>
+                              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                 {isOnline 
+                                    ? 'Active now' 
+                                    : `Last seen ${lastSeenText}`
+                                 }
+                              </div>
 
                         {/* Mini Stats */}
                         <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">

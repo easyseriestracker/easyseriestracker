@@ -58,7 +58,30 @@ export const updateUser = async (updatedUser: User) => {
 export const updateLastSeen = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
+  await supabase
+    .from('profiles')
+    .update({ 
+      last_seen: new Date().toISOString(),
+      is_online: true // Çevrimiçi durumunu güncelle
+    })
+    .eq('id', user.id);
+    
+  // 5 dakika sonra çevrimdışı olarak işaretle
+  setTimeout(async () => {
+    const { data: lastActivity } = await supabase
+      .from('profiles')
+      .select('last_seen')
+      .eq('id', user.id)
+      .single();
+      
+    // Eğer son aktivite 5 dakikadan eskiyse çevrimdışı yap
+    if (lastActivity && new Date(lastActivity.last_seen).getTime() < Date.now() - 5 * 60 * 1000) {
+      await supabase
+        .from('profiles')
+        .update({ is_online: false })
+        .eq('id', user.id);
+    }
+  }, 5 * 60 * 1000); // 5 dakika sonra kontrol et
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
