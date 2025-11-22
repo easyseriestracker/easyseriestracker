@@ -593,10 +593,11 @@ export const getReviewById = async (reviewId: string): Promise<Review | undefine
   return {
     id: data.id,
     showId: data.show_id,
-    showName: "Unknown", // Need to fetch or store? Storing might be better but for now...
-    showPoster: null,
+    showName: data.show_name || "Unknown",
+    showPoster: data.show_poster || null,
     userId: data.user_id,
     username: data.username,
+    userAvatar: data.user_avatar,
     content: data.content,
     rating: data.rating,
     createdAt: data.created_at,
