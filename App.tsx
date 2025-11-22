@@ -2809,8 +2809,8 @@ const Members = () => {
          const allMembers = await getAllMembers();
          // Çevrimiçi kullanıcıları en üste al
          const sortedMembers = [...allMembers].sort((a, b) => {
-            const aIsOnline = a.isOnline || false;
-            const bIsOnline = b.isOnline || false;
+            const aIsOnline = (a as any).isOnline || false;
+            const bIsOnline = (b as any).isOnline || false;
             if (aIsOnline && !bIsOnline) return -1;
             if (!aIsOnline && bIsOnline) return 1;
             return 0;
@@ -2826,7 +2826,9 @@ const Members = () => {
 
    return (
       <div className="pt-20 md:pt-32 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
-         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 text-glow text-center sm:text-left">{t('community')}</h1>
+         <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-8 md:mb-12 text-glow text-center sm:text-left">
+            {t('community')}
+         </h1>
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {members.map(m => {
                const memberTheme = m.topFavorites?.[0]?.backdrop_path
@@ -2836,8 +2838,7 @@ const Members = () => {
                const lastSeenText = getLastSeenText(m.lastSeen);
 
                return (
-                  <Link to={`/profile/${m.id}`} key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
-                     {/* Card Background */}
+                  <div key={m.id} className="bg-[#1f2329] border border-white/10 rounded-2xl p-6 hover:border-accentGreen/50 hover:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition group relative overflow-hidden">
                      {memberTheme && (
                         <>
                            <div className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
@@ -2846,53 +2847,55 @@ const Members = () => {
                      )}
 
                      <div className="relative z-10">
-                        <div className="flex items-center gap-4 mb-6">
-                           <div className={`w-16 h-16 rounded-full border-2 ${isOnline ? 'border-green-500' : 'border-white/10'} group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl relative`}>
-                              {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" alt={m.username} /> : m.username[0].toUpperCase()}
-                              {isOnline && (
-                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1f2329] animate-pulse"></div>
-                              )}
-                           </div>
-                           <div>
-                              <div className="font-black text-white text-xl group-hover:text-accentGreen transition">
-                                 {m.username}
+                        <Link to={`/profile/${m.id}`} className="block">
+                           <div className="flex items-center gap-4 mb-6">
+                              <div className={`w-16 h-16 rounded-full border-2 ${isOnline ? 'border-green-500' : 'border-white/10'} group-hover:border-accentGreen transition overflow-hidden bg-gradient-to-br ${getAvatarColor(m.username)} flex items-center justify-center text-white font-black text-2xl relative`}>
+                                 {m.avatar ? <img src={m.avatar} className="w-full h-full object-cover" alt={m.username} /> : m.username[0].toUpperCase()}
                                  {isOnline && (
-                                    <span className="ml-2 text-xs font-normal text-green-500">• Online</span>
+                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1f2329] animate-pulse"></div>
                                  )}
                               </div>
-                              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                 {isOnline 
-                                    ? 'Active now' 
-                                    : `Last seen ${lastSeenText}`
-                                 }
+                              <div>
+                                 <div className="font-black text-white text-xl group-hover:text-accentGreen transition">
+                                    {m.username}
+                                    {isOnline && (
+                                       <span className="ml-2 text-xs font-normal text-green-500">• Online</span>
+                                    )}
+                                 </div>
+                                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    {isOnline 
+                                       ? 'Active now' 
+                                       : `Last seen ${lastSeenText}`
+                                    }
+                                 </div>
                               </div>
+                           </div>
 
-                        {/* Mini Stats */}
-                        <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">
-                           <div className="text-center">
-                              <div className="text-lg font-black text-white">{m.watchlist.length}</div>
-                              <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
-                           </div>
-                           <div className="text-center">
-                              <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
-                              <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
-                           </div>
-                           <div className="text-center">
-                              <div className="text-lg font-black text-white">{m.lists.length}</div>
-                              <div className="text-[10px] font-bold uppercase text-gray-600">Lists</div>
-                           </div>
-                        </div>
-
-                        {/* Favorites Preview */}
-                        <div className="flex gap-2 justify-center">
-                           {m.topFavorites.slice(0, 3).map((s, i) => (
-                              <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
-                                 <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" />
+                           <div className="grid grid-cols-3 gap-4 mb-6 border-t border-white/5 pt-4">
+                              <div className="text-center">
+                                 <div className="text-lg font-black text-white">{m.watchlist.length}</div>
+                                 <div className="text-[10px] font-bold uppercase text-gray-600">Tracking</div>
                               </div>
-                           ))}
-                        </div>
+                              <div className="text-center">
+                                 <div className="text-lg font-black text-white">{Object.keys(m.ratings).length}</div>
+                                 <div className="text-[10px] font-bold uppercase text-gray-600">Rated</div>
+                              </div>
+                              <div className="text-center">
+                                 <div className="text-lg font-black text-white">{m.lists.length}</div>
+                                 <div className="text-[10px] font-bold uppercase text-gray-600">Lists</div>
+                              </div>
+                           </div>
+
+                           <div className="flex gap-2 justify-center">
+                              {m.topFavorites.slice(0, 3).map((s, i) => (
+                                 <div key={i} className="w-16 aspect-[2/3] bg-gray-800 rounded overflow-hidden opacity-60 group-hover:opacity-100 transition">
+                                    <img src={getImageUrl(s.poster_path)} className="w-full h-full object-cover" alt="" />
+                                 </div>
+                              ))}
+                           </div>
+                        </Link>
                      </div>
-                  </Link>
+                  </div>
                );
             })}
          </div>
