@@ -114,12 +114,30 @@ export const getSciFiShows = async (page = 1): Promise<Show[]> => {
   return data ? data.results.map(mapTmdbToShow) : [];
 };
 
-export const getAllCuratedShows = async (page = 1, sortBy: string = 'popularity.desc', genre?: string): Promise<Show[]> => {
+export const getAllCuratedShows = async (page = 1, sortBy: string = 'popularity.desc', genre?: string, minVotes?: number, withoutGenres?: string, year?: string, status?: string, language?: string): Promise<Show[]> => {
   const params: any = { page: page.toString(), sort_by: sortBy };
 
   // TMDB Specific Sorts & Filters
-  if (sortBy === 'vote_average.desc' || sortBy === 'vote_average.asc') {
-    params['vote_count.gte'] = '300'; // Filter junk
+  if (minVotes) {
+    params['vote_count.gte'] = minVotes.toString();
+  } else if (sortBy === 'vote_average.desc' || sortBy === 'vote_average.asc') {
+    params['vote_count.gte'] = '300'; // Default filter for rating sorts
+  }
+
+  if (withoutGenres) {
+    params['without_genres'] = withoutGenres;
+  }
+
+  if (year) {
+    params['first_air_date_year'] = year;
+  }
+
+  if (status) {
+    params['with_status'] = status;
+  }
+
+  if (language) {
+    params['with_original_language'] = language;
   }
 
   // Genre Mapping (Correct IDs)

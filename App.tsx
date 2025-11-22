@@ -686,9 +686,17 @@ const BrowsePage = () => {
    const [page, setPage] = useState(1);
    const [loading, setLoading] = useState(false);
    const [searchParams, setSearchParams] = useSearchParams();
+
+   // Params
    const sort = searchParams.get('sort') || 'popularity.desc';
    const genreParam = searchParams.get('genre') || '';
+   const withoutGenresParam = searchParams.get('without_genres') || '';
+   const yearParam = searchParams.get('year') || '';
+   const statusParam = searchParams.get('status') || '';
+   const langParam = searchParams.get('lang') || '';
+
    const selectedGenres = genreParam ? genreParam.split(',') : [];
+   const excludedGenres = withoutGenresParam ? withoutGenresParam.split(',') : [];
 
    const observer = useRef<IntersectionObserver | null>(null);
    const { t } = useTranslation();
@@ -707,7 +715,7 @@ const BrowsePage = () => {
    useEffect(() => {
       setShows([]);
       setPage(1);
-   }, [sort, genreParam]);
+   }, [sort, genreParam, withoutGenresParam, yearParam, statusParam, langParam]);
 
    useEffect(() => {
       const loadData = async () => {
@@ -723,74 +731,188 @@ const BrowsePage = () => {
             const ids = list.slice((page - 1) * 20, page * 20).map(x => x.id);
             res = await getShowsByIds(ids);
          } else {
-            res = await getAllCuratedShows(page, sort, genreParam);
+            const minVotes = sort === 'vote_average.desc' ? 300 : undefined;
+            res = await getAllCuratedShows(page, sort, genreParam, minVotes, withoutGenresParam, yearParam, statusParam, langParam);
          }
 
          setShows(prev => [...prev, ...res]);
          setLoading(false);
       };
       loadData();
-   }, [page, sort, genreParam]);
+   }, [page, sort, genreParam, withoutGenresParam, yearParam, statusParam, langParam]);
 
    const genres = [
-      { id: '28', label: 'Action' },
-      { id: '35', label: 'Comedy' },
-      { id: '18', label: 'Drama' },
-      { id: '10765', label: 'Sci-Fi' },
-      { id: '9648', label: 'Mystery' },
+      { id: '10759', label: 'Action & Adventure' },
       { id: '16', label: 'Animation' },
-      { id: 'anime', label: 'Anime' },
+      { id: '35', label: 'Comedy' },
+      { id: '80', label: 'Crime' },
+      { id: '99', label: 'Documentary' },
+      { id: '18', label: 'Drama' },
+      { id: '10751', label: 'Family' },
+      { id: '10762', label: 'Kids' },
+      { id: '9648', label: 'Mystery' },
+      { id: '10763', label: 'News' },
+      { id: '10764', label: 'Reality' },
+      { id: '10765', label: 'Sci-Fi & Fantasy' },
+      { id: '10766', label: 'Soap' },
+      { id: '10767', label: 'Talk' },
+      { id: '10768', label: 'War & Politics' },
+      { id: '37', label: 'Western' },
    ];
 
    const toggleGenre = (id: string) => {
-      let newGenres = [...selectedGenres];
-      if (newGenres.includes(id)) {
-         newGenres = newGenres.filter(g => g !== id);
-      } else {
-         newGenres.push(id);
+      const isSelected = selectedGenres.includes(id);
+      const isExcluded = excludedGenres.includes(id);
+
+      let newSelected = [...selectedGenres];
+      let newExcluded = [...excludedGenres];
+
+      if (!isSelected && !isExcluded) {
+         // State 1 -> 2: Include
+         newSelected.push(id);
+      } else if (isSelected) {
+         // State 2 -> 3: Exclude
+         newSelected = newSelected.filter(g => g !== id);
+         newExcluded.push(id);
+      } else if (isExcluded) {
+         // State 3 -> 1: Reset
+         newExcluded = newExcluded.filter(g => g !== id);
       }
-      setSearchParams({ sort, genre: newGenres.join(',') });
+
+      setSearchParams({
+         sort,
+         genre: newSelected.join(','),
+         without_genres: newExcluded.join(','),
+         year: yearParam,
+         status: statusParam,
+         lang: langParam
+      });
+   };
+
+   const getGenreState = (id: string) => {
+      if (selectedGenres.includes(id)) return 'selected';
+      if (excludedGenres.includes(id)) return 'excluded';
+      return 'none';
+   };
+
+   const updateFilter = (key: string, value: string) => {
+      const newParams: any = {
+         sort,
+         genre: genreParam,
+         without_genres: withoutGenresParam,
+         year: yearParam,
+         status: statusParam,
+         lang: langParam
+      };
+      newParams[key] = value;
+      setSearchParams(newParams);
    };
 
    return (
       <div className="pt-32 px-6 max-w-[1400px] mx-auto min-h-screen">
-         <div className="flex flex-col gap-6 mb-10">
+         <div className="flex flex-col gap-8 mb-10">
             <h1 className="text-5xl font-black text-white uppercase tracking-tighter text-glow">{t('discoverShows')}</h1>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-               <div className="flex gap-2 overflow-x-auto pb-1">
-                  <button
-                     onClick={() => setSearchParams({ sort, genre: '' })}
-                     className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition ${selectedGenres.length === 0 ? 'bg-accentGreen text-black' : 'bg-black/20 text-gray-400 hover:text-white'}`}
-                  >
-                     All
-                  </button>
-                  {genres.map(g => (
-                     <button
-                        key={g.id}
-                        onClick={() => toggleGenre(g.id)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap transition ${selectedGenres.includes(g.id) ? 'bg-accentGreen text-black' : 'bg-black/20 text-gray-400 hover:text-white'}`}
+            {/* Main Filters Container */}
+            <div className="bg-[#1f2329] p-6 rounded-3xl border border-white/10 shadow-2xl">
+
+               {/* Top Row: Sort & Advanced Filters */}
+               <div className="flex flex-wrap items-center gap-4 mb-6 border-b border-white/5 pb-6">
+                  {/* Sort Options */}
+                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                     {[
+                        { id: 'popularity.desc', label: 'Popularity' },
+                        { id: 'vote_average.desc', label: 'Rating High' },
+                        { id: 'vote_average.asc', label: 'Rating Low' },
+                        { id: 'first_air_date.desc', label: 'Newest' },
+                        { id: 'site_rating', label: 'Site Score' },
+                     ].map(opt => (
+                        <button
+                           key={opt.id}
+                           onClick={() => updateFilter('sort', opt.id)}
+                           className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition border ${sort === opt.id ? 'bg-white text-black border-white' : 'bg-black/40 text-gray-400 border-transparent hover:text-white'}`}
+                        >
+                           {opt.label}
+                        </button>
+                     ))}
+                  </div>
+
+                  <div className="w-px h-8 bg-white/10 hidden md:block" />
+
+                  {/* Advanced Filters */}
+                  <div className="flex gap-4 flex-wrap">
+                     <select
+                        value={yearParam}
+                        onChange={(e) => updateFilter('year', e.target.value)}
+                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
                      >
-                        {g.label}
-                     </button>
-                  ))}
+                        <option value="">Year: All</option>
+                        {Array.from({ length: 76 }, (_, i) => 2025 - i).map(y => (
+                           <option key={y} value={y}>{y}</option>
+                        ))}
+                     </select>
+
+                     <select
+                        value={statusParam}
+                        onChange={(e) => updateFilter('status', e.target.value)}
+                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
+                     >
+                        <option value="">Status: All</option>
+                        <option value="0">Returning Series</option>
+                        <option value="3">Ended</option>
+                        <option value="4">Canceled</option>
+                        <option value="5">Pilot</option>
+                     </select>
+
+                     <select
+                        value={langParam}
+                        onChange={(e) => updateFilter('lang', e.target.value)}
+                        className="bg-black/40 text-white text-xs font-bold uppercase px-4 py-2 rounded-lg border border-white/10 focus:border-accentGreen outline-none appearance-none cursor-pointer hover:bg-black/60 transition"
+                     >
+                        <option value="">Language: All</option>
+                        <option value="en">English</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="tr">Turkish</option>
+                     </select>
+                  </div>
                </div>
 
-               <div className="flex gap-2 overflow-x-auto pb-1 border-l border-white/10 pl-4">
-                  {[
-                     { id: 'popularity.desc', label: 'Popularity' },
-                     { id: 'vote_average.desc', label: 'Rating High' },
-                     { id: 'vote_average.asc', label: 'Rating Low' },
-                     { id: 'site_rating', label: 'Site Score' },
-                  ].map(opt => (
+               {/* Genre Cloud */}
+               <div>
+                  <div className="flex justify-between items-center mb-3">
+                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest">Filter by Genre</h3>
                      <button
-                        key={opt.id}
-                        onClick={() => setSearchParams({ genre: genreParam, sort: opt.id })}
-                        className={`px-3 py-2 rounded text-xs font-bold uppercase tracking-wider whitespace-nowrap transition border ${sort === opt.id ? 'border-white text-white' : 'border-transparent text-gray-500 hover:text-white'}`}
+                        onClick={() => setSearchParams({ sort })}
+                        className="text-[10px] font-bold uppercase text-red-500 hover:text-red-400 transition"
                      >
-                        {opt.label}
+                        Reset All
                      </button>
-                  ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                     {genres.map(g => {
+                        const state = getGenreState(g.id);
+                        let style = 'bg-black/40 text-gray-400 hover:text-white border-transparent';
+                        if (state === 'selected') style = 'bg-accentGreen text-black border-accentGreen shadow-[0_0_15px_rgba(0,224,84,0.3)]';
+                        if (state === 'excluded') style = 'bg-red-500/10 text-red-500 border-red-500/30 line-through decoration-2 opacity-70';
+
+                        return (
+                           <button
+                              key={g.id}
+                              onClick={() => toggleGenre(g.id)}
+                              className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition border ${style}`}
+                           >
+                              {g.label}
+                           </button>
+                        );
+                     })}
+                  </div>
+                  <div className="mt-3 text-[10px] text-gray-600 font-medium italic">
+                     * Click once to <span className="text-accentGreen">include</span>, twice to <span className="text-red-500">exclude</span>.
+                  </div>
                </div>
             </div>
          </div>
