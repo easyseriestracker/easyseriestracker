@@ -26,6 +26,7 @@ const transformProfileToUser = (profile: any, sessionUser: any): User => {
     ratings: {},   // Populated separately
     lists: [],     // Populated separately
     joinedAt: joinedAt,
+    lastSeen: profile.last_seen
   };
 };
 
@@ -52,6 +53,18 @@ export const updateUser = async (updatedUser: User) => {
     settings: updatedUser.settings,
     top_favorites: updatedUser.topFavorites,
   }).eq('id', updatedUser.id);
+};
+
+export const updateLastSeen = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id);
+};
+
+export const searchUsers = async (query: string): Promise<User[]> => {
+  const { data } = await supabase.from('profiles').select('*').ilike('username', `%${query}%`).limit(5);
+  if (!data) return [];
+  return data.map(p => transformProfileToUser(p, null));
 };
 
 export const uploadAvatar = async (file: File): Promise<string | null> => {

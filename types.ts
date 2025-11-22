@@ -17,6 +17,7 @@ export interface User {
     notificationsEnabled?: boolean;
   };
   joinedAt: string;
+  lastSeen?: string;
 }
 
 export interface List {

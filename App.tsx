@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, Suggestion } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -82,7 +82,9 @@ const TRANSLATIONS = {
       alreadyHaveAccount: "Already have an account?",
       suggestions: "Suggestions",
       noSuggestions: "No suggestions yet.",
-      delete: "Delete"
+      delete: "Delete",
+      cancel: "Cancel",
+      send: "Send",
    },
    tr: {
       community: "Üyeler",
@@ -97,7 +99,7 @@ const TRANSLATIONS = {
       tracking: "Listede",
       viewDetails: "Detaylar",
       findObsession: "Yeni takıntını bul",
-      searchPlaceholder: "Dizi ara...",
+      searchPlaceholder: "Dizileri veya kullanıcıları ara...",
       globalTrending: "Dünyada Trend Olanlar",
       hallOfFame: "Efsaneler",
       mindBenders: "Bilim Kurgu",
@@ -155,7 +157,9 @@ const TRANSLATIONS = {
       alreadyHaveAccount: "Zaten hesabın var mı?",
       suggestions: "Öneriler",
       noSuggestions: "Henüz öneri yok.",
-      delete: "Sil"
+      delete: "Sil",
+      cancel: "İptal",
+      send: "Gönder",
    }
 };
 
@@ -283,7 +287,38 @@ const Navbar = () => {
    const { t } = useTranslation();
    const [isScrolled, setIsScrolled] = useState(false);
    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+   const [showSearch, setShowSearch] = useState(false);
+   const [searchQuery, setSearchQuery] = useState('');
+   const [searchResults, setSearchResults] = useState<{ shows: Show[], users: User[] }>({ shows: [], users: [] });
    const location = useLocation();
+   const searchRef = useRef<HTMLDivElement>(null);
+   const navigate = useNavigate();
+
+   useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+         if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+            setShowSearch(false);
+         }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+   }, []);
+
+   useEffect(() => {
+      const search = async () => {
+         if (searchQuery.trim().length > 2) {
+            const [shows, users] = await Promise.all([
+               searchShows(searchQuery),
+               searchUsers(searchQuery)
+            ]);
+            setSearchResults({ shows: shows.slice(0, 3), users: users.slice(0, 3) });
+         } else {
+            setSearchResults({ shows: [], users: [] });
+         }
+      };
+      const timeout = setTimeout(search, 300);
+      return () => clearTimeout(timeout);
+   }, [searchQuery]);
 
    useEffect(() => {
       const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -316,6 +351,68 @@ const Navbar = () => {
                <div className="flex items-center gap-6">
                   <Link to="/members" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/members' ? 'text-white' : 'text-gray-400'}`}>{t('community')}</Link>
                   <Link to="/browse" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/browse' ? 'text-white' : 'text-gray-400'}`}>{t('discoverShows') || 'Discover'}</Link>
+
+                  {/* Search Icon */}
+                  <div className="relative" ref={searchRef}>
+                     <button
+                        onClick={() => { setShowSearch(!showSearch); setTimeout(() => document.getElementById('nav-search')?.focus(), 100); }}
+                        className={`text-gray-400 hover:text-white transition-colors ${showSearch ? 'text-white' : ''}`}
+                     >
+                        <Search size={18} />
+                     </button>
+
+                     <div className={`absolute top-full right-0 mt-4 w-80 bg-[#1f2329] border border-white/10 rounded-xl shadow-2xl overflow-hidden transition-all duration-200 origin-top-right ${showSearch ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                        <div className="p-3 border-b border-white/5">
+                           <input
+                              id="nav-search"
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder={t('searchPlaceholder')}
+                              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accentGreen/50"
+                           />
+                        </div>
+                        {(searchResults.shows.length > 0 || searchResults.users.length > 0) && (
+                           <div className="max-h-96 overflow-y-auto">
+                              {searchResults.shows.length > 0 && (
+                                 <div className="p-2">
+                                    <div className="text-[10px] font-bold uppercase text-gray-500 px-2 mb-1">Shows</div>
+                                    {searchResults.shows.map(s => (
+                                       <button
+                                          key={s.id}
+                                          onClick={() => { navigate(`/show/${s.id}`); setShowSearch(false); setSearchQuery(''); }}
+                                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
+                                       >
+                                          <img src={getImageUrl(s.poster_path)} className="w-8 h-12 object-cover rounded bg-gray-800" />
+                                          <div className="min-w-0">
+                                             <div className="text-sm font-bold text-white truncate">{s.name}</div>
+                                             <div className="text-xs text-gray-500">{s.first_air_date?.split('-')[0]}</div>
+                                          </div>
+                                       </button>
+                                    ))}
+                                 </div>
+                              )}
+                              {searchResults.users.length > 0 && (
+                                 <div className="p-2 border-t border-white/5">
+                                    <div className="text-[10px] font-bold uppercase text-gray-500 px-2 mb-1">Users</div>
+                                    {searchResults.users.map(u => (
+                                       <button
+                                          key={u.id}
+                                          onClick={() => { navigate(`/profile/${u.id}`); setShowSearch(false); setSearchQuery(''); }}
+                                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
+                                       >
+                                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(u.username)} flex items-center justify-center text-white text-xs font-bold`}>
+                                             {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover rounded-full" /> : u.username[0]}
+                                          </div>
+                                          <div className="text-sm font-bold text-white truncate">{u.username}</div>
+                                       </button>
+                                    ))}
+                                 </div>
+                              )}
+                           </div>
+                        )}
+                     </div>
+                  </div>
                </div>
 
                {user ? (
@@ -957,7 +1054,7 @@ const Home = () => {
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                <div className="bg-[#1f2329] rounded-2xl border border-white/10 p-6 max-w-lg w-full shadow-2xl">
                   <div className="flex items-center justify-between mb-4">
-                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Öneride Bulun</h2>
+                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{t('suggestions')}</h2>
                      <button
                         onClick={() => {
                            setShowSuggestionModal(false);
@@ -983,7 +1080,7 @@ const Home = () => {
                         }}
                         className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white transition"
                      >
-                        İptal
+                        {t('cancel')}
                      </button>
                      <button
                         onClick={async () => {
@@ -1006,7 +1103,7 @@ const Home = () => {
                         }}
                         className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition"
                      >
-                        Gönder
+                        {t('send')}
                      </button>
                   </div>
                </div>
@@ -2588,6 +2685,12 @@ const Members = () => {
                      <div>
                         <div className="font-black text-white text-xl group-hover:text-accentGreen transition">{m.username}</div>
                         <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Member since {new Date(m.joinedAt).toLocaleDateString()}</div>
+                        {m.lastSeen && (Date.now() - new Date(m.lastSeen).getTime() < 5 * 60 * 1000) && (
+                           <div className="flex items-center gap-1.5 mt-1">
+                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Online</span>
+                           </div>
+                        )}
                      </div>
                   </div>
 
@@ -2800,6 +2903,10 @@ const App = () => {
 
    useEffect(() => {
       refreshUser();
+      // Update last seen every 5 minutes
+      updateLastSeen();
+      const interval = setInterval(updateLastSeen, 5 * 60 * 1000);
+      return () => clearInterval(interval);
    }, []);
 
    const handleLogout = async () => {
