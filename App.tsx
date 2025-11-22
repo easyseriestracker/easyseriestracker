@@ -1340,66 +1340,6 @@ const ListDetailPage = () => {
                   </div>
                ))}
             </div>
-
-            {/* Community Lists Section */}
-            {communityLists.length > 0 && (
-               <div className="mt-20">
-                  <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
-                     <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {communityLists.slice(0, 6).map(list => (
-                        <Link
-                           key={list.id}
-                           to={`/list/${list.id}`}
-                           className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
-                        >
-                           {/* List Preview */}
-                           <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
-                              {list.items.slice(0, 4).map((show: any, idx: number) => (
-                                 <div key={idx} className="relative overflow-hidden">
-                                    <img
-                                       src={getImageUrl(show.poster_path)}
-                                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
-                                       alt=""
-                                    />
-                                 </div>
-                              ))}
-                              {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
-                                 <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
-                                    <Film size={20} className="text-gray-700" />
-                                 </div>
-                              ))}
-                           </div>
-
-                           {/* List Info */}
-                           <div className="p-4">
-                              <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
-                                 {list.name}
-                              </h3>
-                              <div className="flex items-center gap-2 mb-2">
-                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                    {list.username[0]?.toUpperCase()}
-                                 </div>
-                                 <span className="text-xs font-bold text-gray-400">{list.username}</span>
-                              </div>
-                              <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-                                 {list.description || 'No description'}
-                              </p>
-                              <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-                                 <span className="flex items-center gap-1">
-                                    <Film size={12} /> {list.items.length}
-                                 </span>
-                                 <span className="flex items-center gap-1">
-                                    <Heart size={12} /> {list.likes || 0}
-                                 </span>
-                              </div>
-                           </div>
-                        </Link>
-                     ))}
-                  </div>
-               </div>
-            )}
          </div>
       </div>
    )
@@ -1637,44 +1577,39 @@ const Profile = () => {
             )}
          </div>
 
-         {/* Modern Tab Navigation - Enhanced Contrast */}
-         <div className="flex flex-wrap gap-3 mb-10 pb-6 relative">
-            {/* Background for better contrast */}
-            <div className="absolute inset-0 -mx-6 bg-black/30 backdrop-blur-md rounded-2xl" />
-
-            <div className="relative z-10 flex flex-wrap gap-3 w-full px-6">
-               {[
-                  { id: 'overview', label: t('overview'), count: null, icon: <Eye size={18} /> },
-                  { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={18} /> },
-                  { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={18} /> },
-                  { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={18} /> },
-                  { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={18} /> },
-               ].map(tab => (
-                  <button
-                     key={tab.id}
-                     onClick={() => setActiveTab(tab.id as any)}
-                     className={`group relative px-5 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all duration-200 ${activeTab === tab.id
-                           ? 'bg-accentGreen text-black shadow-xl shadow-accentGreen/30'
-                           : 'bg-black/40 text-gray-300 border-2 border-white/20 hover:border-accentGreen/50 hover:bg-black/60 hover:text-white backdrop-blur-sm'
-                        }`}
-                  >
-                     <div className="flex items-center gap-2">
-                        <span className={activeTab === tab.id ? 'text-black' : 'text-gray-400 group-hover:text-accentGreen'}>
-                           {tab.icon}
+         {/* Modern Tab Navigation */}
+         <div className="flex flex-wrap gap-3 mb-10 pb-6">
+            {[
+               { id: 'overview', label: t('overview'), count: null, icon: <Eye size={18} /> },
+               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={18} /> },
+               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={18} /> },
+               { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={18} /> },
+               { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={18} /> },
+            ].map(tab => (
+               <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`group relative px-5 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all duration-200 ${activeTab === tab.id
+                     ? 'bg-accentGreen text-black shadow-xl shadow-accentGreen/40 scale-105'
+                     : 'bg-gradient-to-br from-white/10 to-white/5 text-gray-200 border border-white/20 hover:border-accentGreen/60 hover:from-white/15 hover:to-white/10 hover:text-white hover:shadow-lg'
+                     }`}
+               >
+                  <div className="flex items-center gap-2">
+                     <span className={activeTab === tab.id ? 'text-black' : 'text-gray-400 group-hover:text-accentGreen'}>
+                        {tab.icon}
+                     </span>
+                     <span>{tab.label}</span>
+                     {tab.count !== null && (
+                        <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
+                           ? 'bg-black/20 text-black'
+                           : 'bg-white/20 text-gray-200 group-hover:bg-accentGreen/20 group-hover:text-accentGreen'
+                           }`}>
+                           {tab.count}
                         </span>
-                        <span>{tab.label}</span>
-                        {tab.count !== null && (
-                           <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
-                                 ? 'bg-black/20 text-black'
-                                 : 'bg-white/20 text-gray-300 group-hover:bg-accentGreen/20 group-hover:text-accentGreen'
-                              }`}>
-                              {tab.count}
-                           </span>
-                        )}
-                     </div>
-                  </button>
-               ))}
-            </div>
+                     )}
+                  </div>
+               </button>
+            ))}
          </div>
 
          <div className="animate-fade-in-up">
