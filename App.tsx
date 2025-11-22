@@ -765,6 +765,78 @@ const Home = () => {
                ))}
             </div>
          </div>
+
+         {/* Rating Reminder Modal */}
+         {showRatingReminder && reminderShow && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+               <div className="bg-[#1f2329] rounded-2xl border border-white/10 shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+                  {/* Show Backdrop */}
+                  <div className="relative h-48 bg-gradient-to-b from-transparent to-[#1f2329]">
+                     {reminderShow.backdrop_path && (
+                        <>
+                           <img src={getImageUrl(reminderShow.backdrop_path, 'w500')} className="w-full h-full object-cover opacity-50" alt="" />
+                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/50 to-transparent" />
+                        </>
+                     )}
+                     <button
+                        onClick={() => setShowRatingReminder(false)}
+                        className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition"
+                     >
+                        <X size={16} className="text-white" />
+                     </button>
+                  </div>
+
+                  <div className="p-6 -mt-16 relative z-10">
+                     <div className="flex gap-4 mb-4">
+                        <img
+                           src={getImageUrl(reminderShow.poster_path)}
+                           alt={reminderShow.name}
+                           className="w-24 h-36 rounded-lg shadow-xl border-2 border-white/20"
+                        />
+                        <div className="flex-1">
+                           <h3 className="text-xl font-black text-white mb-1">{reminderShow.name}</h3>
+                           <p className="text-xs text-gray-400 mb-2">{reminderShow.first_air_date?.split('-')[0]} • {reminderShow.number_of_seasons} Seasons</p>
+                           <p className="text-sm text-gray-300 line-clamp-2">{reminderShow.overview}</p>
+                        </div>
+                     </div>
+
+                     <div className="bg-[#14181c] rounded-xl p-4 mb-4">
+                        <p className="text-sm text-gray-300 mb-3 text-center font-medium">How's it going? Rate your experience!</p>
+                        <div className="flex justify-center gap-2">
+                           {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                 key={star}
+                                 onClick={() => setReminderRating(star)}
+                                 className="transition-transform hover:scale-125"
+                              >
+                                 <Star
+                                    size={32}
+                                    className={`${reminderRating >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-600 hover:text-accentOrange'}`}
+                                 />
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+
+                     <div className="flex gap-3">
+                        <button
+                           onClick={() => setShowRatingReminder(false)}
+                           className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-sm text-gray-400 hover:text-white transition"
+                        >
+                           Maybe Later
+                        </button>
+                        <button
+                           onClick={() => handleReminderRate(reminderRating)}
+                           disabled={reminderRating === 0}
+                           className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                           Rate Show
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    );
 };
