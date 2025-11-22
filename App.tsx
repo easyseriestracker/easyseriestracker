@@ -1398,19 +1398,45 @@ const ReviewDetailPage = () => {
    }, [id]);
 
    const handleReply = async () => {
-      if (!user || !review || !replyContent.trim()) return;
-      await replyToReview(review.id, {
-         userId: user.id,
-         username: user.username,
-         avatar: user.avatar,
-         content: replyContent
-      });
-      const updated = await getReviewById(review.id);
-      if (updated) {
-         // Preserve show details if they were fetched separately
-         setReview(prev => prev ? ({ ...updated, showName: prev.showName, showPoster: prev.showPoster }) : updated);
+      if (!user) {
+         alert('Yanıt yazmak için giriş yapmalısınız');
+         navigate('/login');
+         return;
       }
-      setReplyContent('');
+      
+      if (!review || !replyContent.trim()) return;
+      
+      try {
+         await replyToReview(review.id, {
+            userId: user.id,
+            username: user.username,
+            avatar: user.avatar,
+            content: replyContent.trim()
+         });
+         
+         const updated = await getReviewById(review.id);
+         if (updated) {
+            setReview(prev => prev ? ({ 
+               ...updated, 
+               showName: prev.showName, 
+               showPoster: prev.showPoster 
+            }) : updated);
+         }
+         
+         setReplyContent('');
+         
+         // Scroll to the bottom of replies
+         setTimeout(() => {
+            const repliesContainer = document.querySelector('.replies-container');
+            if (repliesContainer) {
+               repliesContainer.scrollTop = repliesContainer.scrollHeight;
+            }
+         }, 100);
+         
+      } catch (error) {
+         console.error('Yanıt gönderilirken hata oluştu:', error);
+         alert('Yanıt gönderilirken bir hata oluştu. Lütfen tekrar deneyin.');
+      }
    };
 
    const handleDeleteReview = async () => {
@@ -1488,26 +1514,74 @@ const ReviewDetailPage = () => {
 
                   <div className="flex items-center gap-6 mb-10">
                      <button
-                        onClick={async () => { if (user) { await likeReview(review.id, user.id); setReview(await getReviewById(review.id) || null); } }}
+                        onClick={async () => {
+                           if (!user) {
+                              alert('Lütfen önce giriş yapın');
+                              navigate('/login');
+                              return;
+                           }
+                           try {
+                              await likeReview(review.id, user.id);
+                              const updatedReview = await getReviewById(review.id);
+                              if (updatedReview) {
+                                 setReview(prev => ({
+                                    ...updatedReview,
+                                    showName: prev?.showName || '',
+                                    showPoster: prev?.showPoster || null
+                                 }));
+                              }
+                           } catch (error) {
+                              console.error('Like işlemi sırasında hata oluştu:', error);
+                              alert('Like işlemi sırasında bir hata oluştu');
+                           }
+                        }}
                         className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition shadow-md hover:-translate-y-0.5 ${user && review.likes.includes(user.id) ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
                      >
-                        <Heart size={20} fill={user && review.likes.includes(user.id) ? "currentColor" : "none"} /> {review.likes.length} Likes
+                        <Heart size={20} fill={user && review.likes.includes(user.id) ? "currentColor" : "none"} /> {review.likes.length} Beğeni
                      </button>
                   </div>
 
                   {/* Replies */}
                   <div className="bg-black/30 rounded-xl p-6 border border-white/5">
-                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-6">Replies ({review.replies?.length || 0})</h3>
-                     {user && (
-                        <div className="flex gap-4 mb-8">
-                           <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br ${getAvatarColor(user.username)} flex items-center justify-center text-white font-bold`}>{user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0]}</div>
-                           <div className="flex-1">
-                              <input value={replyContent} onChange={e => setReplyContent(e.target.value)} placeholder="Add a reply..." className="w-full bg-transparent border-b border-white/20 focus:border-accentGreen outline-none text-white pb-2 text-sm transition" />
-                              <div className="flex justify-end mt-2"><Button onClick={handleReply} variant="secondary" className="!py-1.5 !px-4 !text-xs font-bold">Reply</Button></div>
+                     <h3 className="text-xs font-bold uppercase text-gray-500 tracking-widest mb-6">Yanıtlar ({review.replies?.length || 0})</h3>
+                     <div className="flex gap-4 mb-8">
+                        <div className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br ${user ? getAvatarColor(user.username) : 'from-gray-600 to-gray-800'} flex items-center justify-center text-white font-bold`}>
+                           {user ? (user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0]) : '?'}
+                        </div>
+                        <div className="flex-1">
+                           <input 
+                              value={replyContent} 
+                              onChange={e => setReplyContent(e.target.value)} 
+                              placeholder={user ? "Yanıtınızı yazın..." : "Yanıt yazmak için giriş yapın"} 
+                              className="w-full bg-transparent border-b border-white/20 focus:border-accentGreen outline-none text-white pb-2 text-sm transition disabled:opacity-50"
+                              disabled={!user}
+                              onKeyDown={async (e) => {
+                                 if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (replyContent.trim()) {
+                                       await handleReply();
+                                    }
+                                 }
+                              }}
+                           />
+                           <div className="flex justify-between items-center mt-2">
+                              {!user && (
+                                 <span className="text-xs text-gray-500">
+                                    Yanıt yazmak için <button onClick={() => navigate('/login')} className="text-accentGreen hover:underline">giriş yapın</button>
+                                 </span>
+                              )}
+                              <Button 
+                                 onClick={handleReply} 
+                                 variant="secondary" 
+                                 className="!py-1.5 !px-4 !text-xs font-bold ml-auto"
+                                 disabled={!user || !replyContent.trim()}
+                              >
+                                 Yanıtla
+                              </Button>
                            </div>
                         </div>
-                     )}
-                     <div className="space-y-6">
+                     </div>
+                     <div className="space-y-6 replies-container" style={{ maxHeight: '500px', overflowY: 'auto', paddingRight: '10px' }}>
                         {review.replies?.map(rep => (
                            <div key={rep.id} className="flex gap-4">
                               <Link to={`/profile/${rep.userId}`} className={`w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br ${getAvatarColor(rep.username)} flex items-center justify-center text-white font-bold`}>{rep.avatar ? <img src={rep.avatar} className="w-full h-full object-cover" /> : rep.username[0]}</Link>
