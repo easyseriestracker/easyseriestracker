@@ -408,6 +408,13 @@ export const getListById = async (listId: string): Promise<List | null> => {
   };
 };
 
+export const reorderListItems = async (listId: string, items: Show[]) => {
+  await supabase
+    .from('lists')
+    .update({ items })
+    .eq('id', listId);
+};
+
 export const getAllPublicLists = async (): Promise<List[]> => {
   try {
     const { data, error } = await supabase
