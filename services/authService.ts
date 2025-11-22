@@ -46,7 +46,7 @@ export const updateUser = async (updatedUser: User) => {
   // 2. Update Profile Fields
   await supabase.from('profiles').update({
     username: updatedUser.username,
-    email: updatedUser.email, // Sync email to profile
+    // email: updatedUser.email, // Removed to avoid 400 error on profile update
     avatar_url: updatedUser.avatar,
     bio: updatedUser.bio,
     background_theme: updatedUser.backgroundTheme,
