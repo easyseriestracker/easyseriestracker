@@ -1572,22 +1572,37 @@ const Profile = () => {
             )}
          </div>
 
-         {/* Stats & Tabs */}
-         <div className="grid grid-cols-4 gap-4 mb-10 border-b border-white/10 pb-1">
+         {/* Modern Tab Navigation */}
+         <div className="flex flex-wrap gap-3 mb-10 border-b border-white/5 pb-6">
             {[
-               { id: 'overview', label: t('overview'), count: null },
-               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length },
-               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length },
-               { id: 'lists', label: t('lists'), count: profileUser.lists.length },
-               { id: 'reviews', label: t('reviews'), count: reviews.length },
+               { id: 'overview', label: t('overview'), count: null, icon: <Eye size={18} /> },
+               { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={18} /> },
+               { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={18} /> },
+               { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={18} /> },
+               { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={18} /> },
             ].map(tab => (
                <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`pb-4 text-sm font-bold uppercase tracking-widest transition relative ${activeTab === tab.id ? 'text-accentGreen text-shadow' : 'text-gray-400 hover:text-white'}`}
+                  className={`group relative px-5 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all duration-200 ${activeTab === tab.id
+                        ? 'bg-accentGreen/10 text-accentGreen border-2 border-accentGreen shadow-lg shadow-accentGreen/20'
+                        : 'bg-white/5 text-gray-400 border-2 border-white/10 hover:border-white/30 hover:bg-white/10 hover:text-white'
+                     }`}
                >
-                  {tab.label} {tab.count !== null && <span className="ml-1 opacity-60">{tab.count}</span>}
-                  {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accentGreen shadow-[0_0_10px_rgba(0,224,84,0.5)]" />}
+                  <div className="flex items-center gap-2">
+                     <span className={activeTab === tab.id ? 'text-accentGreen' : 'text-gray-500 group-hover:text-gray-300'}>
+                        {tab.icon}
+                     </span>
+                     <span>{tab.label}</span>
+                     {tab.count !== null && (
+                        <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
+                              ? 'bg-accentGreen/20 text-accentGreen'
+                              : 'bg-white/10 text-gray-500 group-hover:text-gray-300'
+                           }`}>
+                           {tab.count}
+                        </span>
+                     )}
+                  </div>
                </button>
             ))}
          </div>
