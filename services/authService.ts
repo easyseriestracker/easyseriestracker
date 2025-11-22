@@ -386,6 +386,36 @@ export const getListById = async (listId: string): Promise<List | null> => {
   };
 };
 
+export const getAllPublicLists = async (): Promise<List[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('lists')
+      .select('*')
+      .eq('is_private', false)
+      .order('created_at', { ascending: false })
+      .limit(12);
+
+    if (error) throw error;
+
+    return (data || []).map((list: any) => ({
+      id: list.id,
+      name: list.name,
+      description: list.description || '',
+      userId: list.user_id,
+      username: list.username || 'Unknown',
+      userAvatar: list.user_avatar || '',
+      items: list.items || [],
+      createdAt: list.created_at,
+      isPrivate: list.is_private || false,
+      likes: list.likes || 0,
+      comments: list.comments || []
+    }));
+  } catch (error) {
+    console.error('Error fetching public lists:', error);
+    return [];
+  }
+};
+
 export const likeList = async (listId: string, userId: string) => {
   const { data: list } = await supabase.from('lists').select('likes').eq('id', listId).single();
   if (!list) return;

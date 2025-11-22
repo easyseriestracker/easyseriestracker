@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronDown, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -500,6 +500,7 @@ const Home = () => {
    const [reminderShow, setReminderShow] = useState<ShowDetails | null>(null);
    const [reminderRating, setReminderRating] = useState(0);
    const hasShownReminderRef = useRef(false);
+   const [communityLists, setCommunityLists] = useState<UserList[]>([]);
    const { t } = useTranslation();
 
    useEffect(() => {
@@ -560,6 +561,10 @@ const Home = () => {
 
                return [...prev, ...newSections];
             });
+
+            // Load community lists
+            const publicLists = await getAllPublicLists();
+            setCommunityLists(publicLists);
          } catch (error) {
             console.error("Failed to load community sections", error);
          }
@@ -1335,6 +1340,66 @@ const ListDetailPage = () => {
                   </div>
                ))}
             </div>
+
+            {/* Community Lists Section */}
+            {communityLists.length > 0 && (
+               <div className="mt-20">
+                  <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
+                     <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     {communityLists.slice(0, 6).map(list => (
+                        <Link
+                           key={list.id}
+                           to={`/list/${list.id}`}
+                           className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
+                        >
+                           {/* List Preview */}
+                           <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
+                              {list.items.slice(0, 4).map((show: any, idx: number) => (
+                                 <div key={idx} className="relative overflow-hidden">
+                                    <img
+                                       src={getImageUrl(show.poster_path)}
+                                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
+                                       alt=""
+                                    />
+                                 </div>
+                              ))}
+                              {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
+                                 <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
+                                    <Film size={20} className="text-gray-700" />
+                                 </div>
+                              ))}
+                           </div>
+
+                           {/* List Info */}
+                           <div className="p-4">
+                              <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
+                                 {list.name}
+                              </h3>
+                              <div className="flex items-center gap-2 mb-2">
+                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                                    {list.username[0]?.toUpperCase()}
+                                 </div>
+                                 <span className="text-xs font-bold text-gray-400">{list.username}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                                 {list.description || 'No description'}
+                              </p>
+                              <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
+                                 <span className="flex items-center gap-1">
+                                    <Film size={12} /> {list.items.length}
+                                 </span>
+                                 <span className="flex items-center gap-1">
+                                    <Heart size={12} /> {list.likes || 0}
+                                 </span>
+                              </div>
+                           </div>
+                        </Link>
+                     ))}
+                  </div>
+               </div>
+            )}
          </div>
       </div>
    )
@@ -1585,8 +1650,8 @@ const Profile = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`group relative px-5 py-3 rounded-xl font-bold text-sm uppercase tracking-wide transition-all duration-200 ${activeTab === tab.id
-                        ? 'bg-accentGreen/10 text-accentGreen border-2 border-accentGreen shadow-lg shadow-accentGreen/20'
-                        : 'bg-white/5 text-gray-400 border-2 border-white/10 hover:border-white/30 hover:bg-white/10 hover:text-white'
+                     ? 'bg-accentGreen/10 text-accentGreen border-2 border-accentGreen shadow-lg shadow-accentGreen/20'
+                     : 'bg-white/5 text-gray-400 border-2 border-white/10 hover:border-white/30 hover:bg-white/10 hover:text-white'
                      }`}
                >
                   <div className="flex items-center gap-2">
@@ -1596,8 +1661,8 @@ const Profile = () => {
                      <span>{tab.label}</span>
                      {tab.count !== null && (
                         <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-black ${activeTab === tab.id
-                              ? 'bg-accentGreen/20 text-accentGreen'
-                              : 'bg-white/10 text-gray-500 group-hover:text-gray-300'
+                           ? 'bg-accentGreen/20 text-accentGreen'
+                           : 'bg-white/10 text-gray-500 group-hover:text-gray-300'
                            }`}>
                            {tab.count}
                         </span>
