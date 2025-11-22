@@ -1407,24 +1407,43 @@ const ReviewDetailPage = () => {
       if (!review || !replyContent.trim()) return;
       
       try {
-         await replyToReview(review.id, {
+         // Optimistically update the UI
+         const tempReplyId = `temp-${Date.now()}`;
+         const newReply: ReviewReply = {
+            id: tempReplyId,
+            userId: user.id,
+            username: user.username,
+            avatar: user.avatar,
+            content: replyContent.trim(),
+            createdAt: new Date().toISOString()
+         };
+         
+         setReview(prev => {
+            if (!prev) return null;
+            return {
+               ...prev,
+               replies: [...(prev.replies || []), newReply]
+            };
+         });
+         
+         setReplyContent('');
+         
+         // Make the API call
+         const response = await replyToReview(review.id, {
             userId: user.id,
             username: user.username,
             avatar: user.avatar,
             content: replyContent.trim()
          });
          
-         // Refresh the review data
-         const updated = await getReviewById(review.id);
-         if (updated) {
+         // Update with the actual data from the server
+         if (response?.review) {
             setReview(prev => prev ? ({ 
-               ...updated, 
+               ...response.review, 
                showName: prev.showName, 
                showPoster: prev.showPoster 
-            }) : updated);
+            }) : response.review);
          }
-         
-         setReplyContent('');
          
          // Scroll to the bottom of replies
          setTimeout(() => {
@@ -1437,6 +1456,15 @@ const ReviewDetailPage = () => {
       } catch (error) {
          console.error('Error sending reply:', error);
          alert('Failed to send reply. Please try again.');
+         
+         // Revert the optimistic update on error
+         setReview(prev => {
+            if (!prev) return null;
+            return {
+               ...prev,
+               replies: prev.replies?.filter(r => !r.id.startsWith('temp-')) || []
+            };
+         });
       }
    };
 
