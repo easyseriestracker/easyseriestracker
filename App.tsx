@@ -1873,7 +1873,7 @@ const Profile = () => {
          <div className="absolute inset-0 h-[50vh] overflow-hidden pointer-events-none">
             {themeImage && (
                <>
-                  <div className="absolute inset-0 bg-cover bg-center opacity-40 blur-sm scale-110" style={{ backgroundImage: `url(${themeImage})` }}></div>
+                  <div className="absolute inset-0 bg-cover bg-center opacity-70 blur-sm scale-110" style={{ backgroundImage: `url(${themeImage})` }}></div>
                   <div className="absolute inset-0 bg-gradient-to-b from-[#14181c]/50 via-[#14181c]/80 to-[#14181c]"></div>
                </>
             )}
@@ -2156,15 +2156,12 @@ const Profile = () => {
                      </div>
                      <div>
                         <label className="block text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">{t('theme')}</label>
-                        <div className="grid grid-cols-2 gap-3 mb-2">
-                           {themes.map(th => (
-                              <button key={th.name} onClick={() => setEditTheme(th.url)} className={`relative aspect-video rounded overflow-hidden border transition group ${editTheme === th.url ? 'border-accentGreen ring-2 ring-accentGreen/50' : 'border-white/20 hover:border-accentGreen'}`}>
-                                 <img src={th.url} className="w-full h-full object-cover group-hover:opacity-100" />
-                                 <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] font-bold text-white p-1 text-center">{th.name}</span>
-                              </button>
-                           ))}
+                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                           <p className="text-xs text-gray-400 flex items-center gap-2">
+                              <ImageIcon size={14} />
+                              <span>Profile theme is automatically set to your #1 Favorite Show. Manual theme selection is temporarily disabled.</span>
+                           </p>
                         </div>
-                        <button onClick={() => setEditTheme('')} className="mt-2 w-full py-2 text-xs text-red-500 font-bold uppercase tracking-wide border border-red-500/20 hover:bg-red-500/10 rounded">{t('resetTheme')}</button>
                      </div>
                      <Button onClick={saveProfile} className="w-full">{t('saveChanges')}</Button>
                   </div>
@@ -2702,8 +2699,8 @@ const Members = () => {
                      {/* Card Background */}
                      {memberTheme && (
                         <>
-                           <div className="absolute inset-0 bg-cover bg-center opacity-0 group-hover:opacity-20 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
-                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                           <div className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity duration-500" style={{ backgroundImage: `url(${memberTheme})` }}></div>
+                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/90 to-transparent"></div>
                         </>
                      )}
 
