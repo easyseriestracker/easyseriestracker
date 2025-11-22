@@ -7,13 +7,27 @@ import { getShowsByIds } from './tmdbService';
 
 // ... (imports)
 
-// --- HELPER: Transform Profile to User ---
-const transformProfileToUser = (profile: any, sessionUser: any): User => {
-  let joinedAt = profile.created_at || new Date().toISOString();
-  if (new Date(joinedAt).getFullYear() === 1970) {
-    joinedAt = new Date().toISOString();
+// ... (transformProfileToUser, getCurrentUser, getUserById, login, register, logout)
+
+export const getAllMembers = async (): Promise<User[]> => {
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('username', { ascending: true });
+
+  if (error || !profiles) {
+    console.error('Error fetching members:', error);
+    return [];
   }
-  return {
+
+  // Çevrimiçi kullanıcıları en üste al
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    if (a.is_online && !b.is_online) return -1;
+    if (!a.is_online && b.is_online) return 1;
+    return 0;
+  });
+
+  return sortedProfiles.map(profile => ({
     id: profile.id,
     username: profile.username,
     email: profile.email,
@@ -22,17 +36,16 @@ const transformProfileToUser = (profile: any, sessionUser: any): User => {
     backgroundTheme: profile.background_theme,
     settings: profile.settings || { language: 'en', notificationsEnabled: true },
     topFavorites: profile.top_favorites || [],
-    watchlist: [], // Populated separately
-    ratings: {},   // Populated separately
-    lists: [],     // Populated separately
-    joinedAt: joinedAt,
-    lastSeen: profile.last_seen
-  };
+    watchlist: [],
+    ratings: {},
+    lists: [],
+    joinedAt: profile.created_at || new Date().toISOString(),
+    lastSeen: profile.last_seen || null,
+    isOnline: profile.is_online || false
+  }));
 };
 
-// ... (getCurrentUser, getUserById, login, register, logout)
-
-export const updateUser = async (updatedUser: User) => {
+// ... (updateUser, updateLastSeen, sendPasswordResetEmail, updatePassword, searchUsers, uploadAvatar, getReviewsByUserId, etc.)
   // 1. Update Auth Email if changed
   // Note: This sends a confirmation email to the new address.
   // Only update email if it's actually different and both values are valid
