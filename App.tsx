@@ -6,7 +6,7 @@ import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from
 import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
-import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu } from 'lucide-react';
+import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
 import Turnstile from 'react-turnstile';
 
 // --- TRANSLATIONS ---
@@ -375,6 +375,12 @@ const ShowCard = ({ show }: { show: Show }) => {
       refreshUser();
    };
 
+   const handleQuickRate = async (r: number) => {
+      if (!user) return;
+      await rateShow(show.id, r);
+      refreshUser();
+   };
+
    return (
       <div className="group relative flex-shrink-0 w-full block">
          <Link to={`/show/${show.id}`} className="block aspect-[2/3] overflow-hidden rounded-lg bg-[#1f2329] ring-1 ring-white/5 transition-all duration-500 group-hover:ring-accentGreen/50 group-hover:shadow-[0_0_40px_rgba(0,224,84,0.15)] relative transform group-hover:-translate-y-2 z-10">
@@ -384,23 +390,38 @@ const ShowCard = ({ show }: { show: Show }) => {
                loading="lazy"
                className="w-full h-full object-cover opacity-90 group-hover:opacity-40 transition-all duration-700 ease-out"
             />
-            {/* Hover Overlay - Quick Track */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 gap-2 p-2 bg-black/60 backdrop-blur-[2px]">
+            {/* Hover Overlay - Quick Track & Rate */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 gap-4 p-4 bg-black/80 backdrop-blur-[2px]">
                {user ? (
-                  <button
-                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
-                     className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${isAdded ? 'bg-red-500 text-white' : 'bg-accentGreen text-black'}`}
-                     title={isAdded ? "Untrack" : "Track"}
-                  >
-                     {isAdded ? <X size={24} /> : <Plus size={24} />}
-                  </button>
+                  <>
+                     <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 ${isAdded ? 'bg-red-500 text-white' : 'bg-accentGreen text-black'}`}
+                        title={isAdded ? "Untrack" : "Track"}
+                     >
+                        {isAdded ? <X size={24} /> : <Plus size={24} />}
+                     </button>
+
+                     <div className="flex flex-col items-center gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Quick Rate</span>
+                        <div className="flex gap-1">
+                           {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                 key={star}
+                                 onClick={() => handleQuickRate(star)}
+                                 className="transition-transform hover:scale-125"
+                              >
+                                 <Star
+                                    size={16}
+                                    className={`${(userRating || 0) >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-600 hover:text-accentOrange'}`}
+                                 />
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                  </>
                ) : (
                   <div className="bg-black/80 text-white text-[10px] font-bold uppercase px-2 py-1 rounded">Log in to track</div>
-               )}
-               {user && (
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white drop-shadow-md">
-                     {isAdded ? "Untrack" : "Track"}
-                  </span>
                )}
             </div>
 
@@ -944,7 +965,10 @@ const ReviewDetailPage = () => {
             setReview(r || null);
             if (r) {
                getShowDetails(r.showId).then(s => {
-                  if (s) setShowBackdrop(s.backdrop_path);
+                  if (s) {
+                     setShowBackdrop(s.backdrop_path);
+                     setReview(prev => prev ? ({ ...prev, showName: s.name, showPoster: s.poster_path }) : null);
+                  }
                });
             }
          });
@@ -960,7 +984,10 @@ const ReviewDetailPage = () => {
          content: replyContent
       });
       const updated = await getReviewById(review.id);
-      setReview(updated || null);
+      if (updated) {
+         // Preserve show details if they were fetched separately
+         setReview(prev => prev ? ({ ...updated, showName: prev.showName, showPoster: prev.showPoster }) : updated);
+      }
       setReplyContent('');
    };
 
@@ -974,7 +1001,10 @@ const ReviewDetailPage = () => {
    const handleDeleteReply = async (replyId: string) => {
       if (review && window.confirm("Delete reply?")) {
          await deleteReply(review.id, replyId);
-         setReview(await getReviewById(review.id) || null);
+         const updated = await getReviewById(review.id);
+         if (updated) {
+            setReview(prev => prev ? ({ ...updated, showName: prev.showName, showPoster: prev.showPoster }) : updated);
+         }
       }
    };
 
@@ -987,12 +1017,13 @@ const ReviewDetailPage = () => {
          {/* Local Fixed Background - Full Screen */}
          {showBackdrop && (
             <div className="fixed inset-0 z-0 pointer-events-none">
-               <img src={getImageUrl(showBackdrop, 'original')} className="w-full h-full object-cover opacity-100" />
-               <div className="absolute inset-0 bg-black/5" />
+               <img src={getImageUrl(showBackdrop, 'original')} className="w-full h-full object-cover opacity-60" />
+               <div className="absolute inset-0 bg-gradient-to-t from-[#14181c] via-[#14181c]/80 to-transparent" />
+               <div className="absolute inset-0 bg-gradient-to-r from-[#14181c]/90 via-[#14181c]/40 to-transparent" />
             </div>
          )}
 
-         <div className="relative z-10 pt-[50vh] max-w-5xl mx-auto px-6">
+         <div className="relative z-10 pt-32 max-w-5xl mx-auto px-6">
             <div className="flex flex-col md:flex-row gap-10">
 
                {/* Left Sidebar (Poster) */}
@@ -1072,7 +1103,7 @@ const ReviewDetailPage = () => {
                </div>
             </div>
          </div>
-      </div>
+      </div >
    );
 };
 
@@ -1376,6 +1407,7 @@ const Profile = () => {
                { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length },
                { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length },
                { id: 'lists', label: t('lists'), count: profileUser.lists.length },
+               { id: 'reviews', label: t('reviews'), count: reviews.length },
             ].map(tab => (
                <button
                   key={tab.id}
@@ -1487,6 +1519,26 @@ const Profile = () => {
                   ))}
                   {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).length === 0 && (
                      <div className="col-span-full text-center text-gray-500 py-12">No shows in watchlist yet.</div>
+                  )}
+               </div>
+            )}
+
+            {activeTab === 'reviews' && (
+               <div className="space-y-4">
+                  {reviews.length > 0 ? reviews.map(r => (
+                     <div key={r.id} className="bg-[#1f2329] p-6 rounded-xl border border-white/5 flex gap-6">
+                        <Link to={`/show/${r.showId}`} className="w-16 h-24 flex-shrink-0 rounded bg-gray-800 overflow-hidden"><img src={getImageUrl(r.showPoster)} className="w-full h-full object-cover" /></Link>
+                        <div>
+                           <div className="flex items-center gap-2 mb-1">
+                              <Link to={`/show/${r.showId}`} className="font-bold text-white hover:text-accentGreen">{r.showName}</Link>
+                              <div className="flex items-center text-accentOrange text-xs"><Star size={10} fill="currentColor" /> {r.rating}</div>
+                           </div>
+                           <p className="text-gray-400 text-sm line-clamp-2 mb-2">{r.content}</p>
+                           <Link to={`/review/${r.id}`} className="text-xs font-bold text-gray-500 hover:text-white uppercase tracking-wider">Read More</Link>
+                        </div>
+                     </div>
+                  )) : (
+                     <div className="col-span-full text-center text-gray-500 py-12">No reviews yet.</div>
                   )}
                </div>
             )}
@@ -1604,6 +1656,8 @@ const ShowPage = () => {
    const { t } = useTranslation();
    const navigate = useNavigate();
 
+   const isInWatchlist = user?.watchlist.some(w => w.showId === (show?.id || 0));
+
    useEffect(() => {
       // Disable global background for this page to manage layout manually
       setBackground(null);
@@ -1628,6 +1682,18 @@ const ShowPage = () => {
       if (!user) return navigate('/login');
       await rateShow(parseInt(id!), r);
       setUserRating(r);
+      refreshUser();
+   };
+
+   const handleWatchlistToggle = async () => {
+      if (!user) return navigate('/login');
+      if (!show) return;
+
+      if (isInWatchlist) {
+         await removeFromWatchlist(show.id);
+      } else {
+         await addToWatchlist(show.id);
+      }
       refreshUser();
    };
 
@@ -1675,44 +1741,93 @@ const ShowPage = () => {
          {/* Local Fixed Background to ensure visibility behind UI as requested */}
          {show?.backdrop_path && (
             <div className="fixed inset-0 z-0 pointer-events-none">
-               <img src={getImageUrl(show.backdrop_path, 'original')} className="w-full h-full object-cover opacity-100" />
-               <div className="absolute inset-0 bg-black/5" /> {/* Reduced overlay opacity to 5% as requested */}
+               <img src={getImageUrl(show.backdrop_path, 'original')} className="w-full h-full object-cover opacity-60" />
+               <div className="absolute inset-0 bg-gradient-to-t from-[#14181c] via-[#14181c]/80 to-transparent" />
+               <div className="absolute inset-0 bg-gradient-to-r from-[#14181c]/90 via-[#14181c]/40 to-transparent" />
             </div>
          )}
 
-         {/* Main Content with padding top to reveal background initially */}
-         <div className="relative z-10 pt-[50vh] max-w-7xl mx-auto px-6 pb-20">
-            <div className="grid md:grid-cols-12 gap-8">
+         {/* Main Content */}
+         <div className="relative z-10 pt-32 max-w-7xl mx-auto px-6 pb-20">
+            <div className="grid md:grid-cols-12 gap-12">
 
-               {/* Main Content (Left) */}
-               <div className="md:col-span-9 p-8 rounded-3xl border border-white/5 bg-[#1f2329]/60 backdrop-blur-sm">
+               {/* Sidebar (Poster & Actions) - Left on Desktop */}
+               <div className="md:col-span-3 space-y-6 order-first md:order-none">
+                  <div className="rounded-xl overflow-hidden shadow-2xl border border-white/10 aspect-[2/3] relative group hover:scale-[1.02] transition-transform duration-500">
+                     <img src={getImageUrl(show.poster_path)} className="w-full h-full object-cover" />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                     <button
+                        onClick={handleWatchlistToggle}
+                        className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all duration-300 ${isInWatchlist ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                     >
+                        {isInWatchlist ? <Check size={20} /> : <Plus size={20} />}
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{isInWatchlist ? 'Added' : 'Track'}</span>
+                     </button>
+                     <button
+                        onClick={() => user ? setShowListModal(true) : navigate('/login')}
+                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all duration-300"
+                     >
+                        <List size={20} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">List</span>
+                     </button>
+                  </div>
+
+                  {/* Rating Card */}
+                  <div className="bg-[#1f2329]/80 backdrop-blur-md p-5 rounded-xl border border-white/10 text-center">
+                     <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Your Rating</div>
+                     <div className="flex justify-center mb-2">
+                        <StarRating rating={userRating} onRate={handleRate} size={24} />
+                     </div>
+                     <div className="text-sm font-medium text-gray-300">{userRating > 0 ? `${userRating}/5` : 'Rate this show'}</div>
+                  </div>
+               </div>
+
+               {/* Main Info (Right) */}
+               <div className="md:col-span-9">
                   {/* Header Info */}
                   <div className="mb-8">
-                     <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none mb-2 drop-shadow-lg text-shadow">{show.name}</h1>
-                     <div className="flex items-center gap-4 text-sm font-bold text-gray-300 uppercase tracking-wider drop-shadow-md">
+                     <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-4 drop-shadow-2xl text-shadow-lg">{show.name}</h1>
+
+                     <div className="flex flex-wrap items-center gap-6 text-sm font-bold text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+                           <Star className="text-accentOrange fill-accentOrange" size={16} />
+                           <span className="text-white">{show.vote_average?.toFixed(1)}</span>
+                           <span className="text-gray-500 text-xs">TMDB</span>
+                        </div>
                         <span>{show.first_air_date?.split('-')[0]}</span>
                         <span>{show.number_of_seasons} Seasons</span>
-                        {show.next_episode_to_air ? <span className="text-blue-400">Airing</span> : <span>Ended</span>}
+                        {show.next_episode_to_air ? (
+                           <span className="text-accentGreen flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-accentGreen animate-pulse" /> Airing</span>
+                        ) : (
+                           <span className="text-gray-500">Ended</span>
+                        )}
                      </div>
                   </div>
 
-                  <div className="text-lg text-gray-100 leading-relaxed font-medium mb-10 drop-shadow-md text-shadow">
+                  <div className="text-xl text-gray-200 leading-relaxed font-medium mb-12 max-w-4xl drop-shadow-md">
                      {show.overview}
                   </div>
 
                   {/* Cast */}
                   <div className="mb-12">
-                     <h3 className="text-xs font-bold uppercase text-gray-400 tracking-widest mb-4 text-shadow">{t('topCast')}</h3>
-                     <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                        {show.cast?.slice(0, 8).map((c, i) => (
-                           <div key={i} className="flex-shrink-0 w-24">
-                              <div className="w-24 h-24 rounded-full bg-gray-800 overflow-hidden mb-2 shadow-lg border border-white/10">
-                                 {c.person.image && <img src={c.person.image.medium} className="w-full h-full object-cover" />}
+                     <h3 className="text-xs font-bold uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2">
+                        <Users size={14} /> Top Cast
+                     </h3>
+                     <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar mask-linear-fade">
+                        {show.cast?.slice(0, 10).map((c, i) => (
+                           <div key={i} className="flex-shrink-0 w-28 group">
+                              <div className="w-24 h-24 rounded-full bg-gray-800 overflow-hidden mb-3 shadow-lg border-2 border-white/10 group-hover:border-accentGreen transition-colors">
+                                 {c.person.image ? (
+                                    <img src={c.person.image.medium} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                 ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-700 text-gray-500"><UserIcon size={32} /></div>
+                                 )}
                               </div>
-                              <div className="text-center">
-                                 <div className="font-bold text-white text-xs leading-tight truncate text-shadow">{c.person.name}</div>
-                                 <div className="text-[10px] text-gray-400 truncate text-shadow">{c.character.name}</div>
-                              </div>
+                              <div className="text-xs font-bold text-white truncate text-center px-1">{c.person.name}</div>
+                              <div className="text-[10px] text-gray-400 truncate text-center px-1">{c.character.name}</div>
                            </div>
                         ))}
                      </div>
@@ -1763,54 +1878,6 @@ const ShowPage = () => {
                            )
                         })}
                         {reviews.length === 0 && <div className="text-gray-500 text-sm italic">No reviews yet. Be the first!</div>}
-                     </div>
-                  </div>
-               </div>
-
-               {/* Right Sidebar (Poster & Actions) */}
-               <div className="md:col-span-3 space-y-6 order-first md:order-none">
-                  <div className="rounded-lg overflow-hidden shadow-2xl border border-white/20 aspect-[2/3] relative group">
-                     <img src={getImageUrl(show.poster_path)} className="w-full h-full object-cover" />
-                  </div>
-
-                  {/* Ratings */}
-                  <div className="grid grid-cols-2 gap-2">
-                     <div className="bg-black/60 backdrop-blur p-3 rounded border border-white/10 text-center">
-                        <div className="text-[10px] font-bold uppercase text-gray-500">TMDB</div>
-                        <div className="text-xl font-black text-white">{show.vote_average.toFixed(1)}</div>
-                     </div>
-                     <div className="bg-black/60 backdrop-blur p-3 rounded border border-white/10 text-center">
-                        <div className="text-[10px] font-bold uppercase text-gray-500">EST Avg</div>
-                        <div className="text-xl font-black text-accentOrange">{siteAvg}</div>
-                     </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                     <button
-                        onClick={async () => {
-                           if (user) {
-                              user.watchlist.some(w => w.showId === show.id) ? await removeFromWatchlist(show.id) : await addToWatchlist(show.id);
-                              refreshUser();
-                           } else {
-                              navigate('/login');
-                           }
-                        }}
-                        className={`w-full py-3 rounded font-bold text-xs uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg ${user?.watchlist.some(w => w.showId === show.id) ? 'bg-accentGreen text-black' : 'bg-white text-black hover:bg-gray-200'}`}
-                     >
-                        {user?.watchlist.some(w => w.showId === show.id) ? <><Check size={14} /> {t('inWatchlist')}</> : <><Plus size={14} /> {t('trackShow')}</>}
-                     </button>
-
-                     <button onClick={() => user ? setShowListModal(true) : navigate('/login')} className="w-full py-3 rounded font-bold text-xs uppercase tracking-widest bg-black/60 backdrop-blur text-white border border-white/10 hover:bg-white/10 transition flex items-center justify-center gap-2 shadow-lg">
-                        <List size={14} /> {t('addToList')}
-                     </button>
-                  </div>
-
-                  {/* User Rating */}
-                  <div className="bg-black/60 backdrop-blur p-4 rounded border border-white/10 text-center shadow-lg">
-                     <div className="text-[10px] font-bold uppercase text-gray-500 mb-2">Rate This Show</div>
-                     <div className="flex justify-center">
-                        <StarRating rating={userRating} onRate={handleRate} size={24} />
                      </div>
                   </div>
                </div>
