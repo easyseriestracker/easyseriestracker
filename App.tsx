@@ -596,28 +596,58 @@ const Home = () => {
    }, [searchQuery]);
 
    useEffect(() => {
+      console.log('[REMINDER DEBUG] useEffect triggered', {
+         hasUser: !!user,
+         watchlistLength: user?.watchlist?.length || 0,
+         hasShown: hasShownReminderRef.current
+      });
+
       // Rating reminder: show once when component mounts
-      if (!user || user.watchlist.length === 0 || hasShownReminderRef.current) return;
+      if (!user) {
+         console.log('[REMINDER DEBUG] No user, skipping');
+         return;
+      }
+
+      if (user.watchlist.length === 0) {
+         console.log('[REMINDER DEBUG] Empty watchlist, skipping');
+         return;
+      }
+
+      if (hasShownReminderRef.current) {
+         console.log('[REMINDER DEBUG] Already shown, skipping');
+         return;
+      }
 
       // Find unrated shows from watchlist
       const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
-      if (unratedShows.length === 0) return;
+      console.log('[REMINDER DEBUG] Found unrated shows:', unratedShows.length);
+
+      if (unratedShows.length === 0) {
+         console.log('[REMINDER DEBUG] All shows rated, skipping');
+         return;
+      }
 
       // Mark as shown immediately to prevent multiple triggers
       hasShownReminderRef.current = true;
+      console.log('[REMINDER DEBUG] Setting timer to show reminder...');
 
       // Show reminder after short delay
       const timer = setTimeout(() => {
+         console.log('[REMINDER DEBUG] Timer fired, loading show...');
          const randomShow = unratedShows[Math.floor(Math.random() * unratedShows.length)];
          getShowDetails(randomShow.showId).then(show => {
+            console.log('[REMINDER DEBUG] Show loaded, displaying reminder:', show.name);
             setReminderShow(show);
             setShowRatingReminder(true);
          }).catch(err => {
-            console.error("Failed to load show for reminder:", err);
+            console.error("[REMINDER DEBUG] Failed to load show:", err);
          });
-      }, 1500);
+      }, 500); // Reduced to 500ms for faster testing
 
-      return () => clearTimeout(timer);
+      return () => {
+         console.log('[REMINDER DEBUG] Cleanup timer');
+         clearTimeout(timer);
+      };
    }, [user]);
 
    const handleReminderRate = async (rating: number) => {
