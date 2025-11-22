@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, Suggestion } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, Suggestion } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -1493,6 +1493,18 @@ const ListDetailPage = () => {
                            </button>
                         )}
                         <div className="flex-1" />
+                        <button
+                           onClick={async () => {
+                              if (window.confirm("Remove this show from the list?")) {
+                                 await removeShowFromList(list.id, item.id);
+                                 setList(await getListById(list.id));
+                              }
+                           }}
+                           className="pointer-events-auto w-8 h-8 bg-red-500/80 hover:bg-red-500 rounded-full flex items-center justify-center shadow-xl transition border-2 border-white/20 hover:border-red-400 mx-1"
+                           title="Remove from list"
+                        >
+                           <Trash2 size={14} className="text-white" />
+                        </button>
                         {index < list.items.length - 1 && (
                            <button
                               onClick={async () => {
@@ -1806,7 +1818,7 @@ const Profile = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`group relative px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm uppercase tracking-wide transition-all duration-200 flex-shrink-0 ${activeTab === tab.id
-                     ? 'bg-accentGreen text-black shadow-xl shadow-accentGreen/40 scale-105'
+                     ? 'bg-gradient-to-br from-accentGreen to-emerald-400 text-black shadow-[0_0_20px_rgba(74,222,128,0.5)] border border-accentGreen/50 scale-105'
                      : 'bg-gradient-to-br from-white/10 to-white/5 text-gray-200 border border-white/20 hover:border-accentGreen/60 hover:from-white/15 hover:to-white/10 hover:text-white hover:shadow-lg'
                      }`}
                >

@@ -432,20 +432,36 @@ export const createList = async (name: string, description: string, isPrivate: b
   };
 };
 
-export const addShowToList = async (listId: string, show: Show) => {
+export const addShowToList = async (listId: string, show: ShowDetails) => {
   const { data: list } = await supabase.from('lists').select('items').eq('id', listId).single();
   if (!list) return;
 
-  const items = list.items || [];
-  if (!items.find((i: any) => i.id === show.id)) {
-    items.push(show);
-    await supabase.from('lists').update({ items }).eq('id', listId);
-  }
+  const currentItems = list.items || [];
+  if (currentItems.find((i: any) => i.id === show.id)) return; // Already added
+
+  const newItem = {
+    id: show.id,
+    name: show.name,
+    poster_path: show.poster_path,
+    vote_average: show.vote_average,
+    first_air_date: show.first_air_date
+  };
+
+  await supabase.from('lists').update({ items: [...currentItems, newItem] }).eq('id', listId);
+};
+
+export const removeShowFromList = async (listId: string, showId: number) => {
+  const { data: list } = await supabase.from('lists').select('items').eq('id', listId).single();
+  if (!list) return;
+
+  const currentItems = list.items || [];
+  const newItems = currentItems.filter((i: any) => i.id !== showId);
+
+  await supabase.from('lists').update({ items: newItems }).eq('id', listId);
 };
 
 export const getListById = async (listId: string): Promise<List | null> => {
   const { data } = await supabase.from('lists').select('*').eq('id', listId).single();
-  if (!data) return null;
 
   return {
     id: data.id,
