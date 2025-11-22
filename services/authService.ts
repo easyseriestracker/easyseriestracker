@@ -9,41 +9,6 @@ import { getShowsByIds } from './tmdbService';
 
 // ... (transformProfileToUser, getCurrentUser, getUserById, login, register, logout)
 
-export const getAllMembers = async (): Promise<User[]> => {
-  const { data: profiles, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('username', { ascending: true });
-
-  if (error || !profiles) {
-    console.error('Error fetching members:', error);
-    return [];
-  }
-
-  // Çevrimiçi kullanıcıları en üste al
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    if (a.is_online && !b.is_online) return -1;
-    if (!a.is_online && b.is_online) return 1;
-    return 0;
-  });
-
-  return sortedProfiles.map(profile => ({
-    id: profile.id,
-    username: profile.username,
-    email: profile.email,
-    avatar: profile.avatar_url,
-    bio: profile.bio,
-    backgroundTheme: profile.background_theme,
-    settings: profile.settings || { language: 'en', notificationsEnabled: true },
-    topFavorites: profile.top_favorites || [],
-    watchlist: [],
-    ratings: {},
-    lists: [],
-    joinedAt: profile.created_at || new Date().toISOString(),
-    lastSeen: profile.last_seen || null,
-    isOnline: profile.is_online || false
-  }));
-};
 
 // Helper function to transform profile to user
 const transformProfileToUser = (profile: any, authUser: any): User => ({
@@ -359,7 +324,6 @@ export const register = async (username: string, email: string, password: string
 export const logout = async () => {
   await supabase.auth.signOut();
 };
-
 
 
 export const getAllMembers = async (): Promise<User[]> => {
