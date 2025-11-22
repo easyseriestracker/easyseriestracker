@@ -590,11 +590,15 @@ export const getReviewById = async (reviewId: string): Promise<Review | undefine
   const { data } = await supabase.from('reviews').select('*').eq('id', reviewId).single();
   if (!data) return undefined;
 
+  // Fetch show details from TMDB
+  const shows = await getShowsByIds([data.show_id]);
+  const show = shows[0];
+
   return {
     id: data.id,
     showId: data.show_id,
-    showName: data.show_name || "Unknown",
-    showPoster: data.show_poster || null,
+    showName: show?.name || "Unknown",
+    showPoster: show?.poster_path || null,
     userId: data.user_id,
     username: data.username,
     userAvatar: data.user_avatar,
