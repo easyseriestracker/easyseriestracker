@@ -499,6 +499,7 @@ const Home = () => {
    const [showRatingReminder, setShowRatingReminder] = useState(false);
    const [reminderShow, setReminderShow] = useState<ShowDetails | null>(null);
    const [reminderRating, setReminderRating] = useState(0);
+   const hasShownReminderRef = useRef(false);
    const { t } = useTranslation();
 
    useEffect(() => {
@@ -595,15 +596,15 @@ const Home = () => {
    }, [searchQuery]);
 
    useEffect(() => {
-      // Rating reminder: show once when user first visits Home page in this session
-      if (!user || user.watchlist.length === 0) return;
-
-      const hasShownThisSession = sessionStorage.getItem('ratingReminderShown');
-      if (hasShownThisSession) return; // Already shown this session
+      // Rating reminder: show once when component mounts
+      if (!user || user.watchlist.length === 0 || hasShownReminderRef.current) return;
 
       // Find unrated shows from watchlist
       const unratedShows = user.watchlist.filter(w => !user.ratings[w.showId]);
-      if (unratedShows.length === 0) return; // All shows are rated
+      if (unratedShows.length === 0) return;
+
+      // Mark as shown immediately to prevent multiple triggers
+      hasShownReminderRef.current = true;
 
       // Show reminder after short delay
       const timer = setTimeout(() => {
@@ -611,9 +612,10 @@ const Home = () => {
          getShowDetails(randomShow.showId).then(show => {
             setReminderShow(show);
             setShowRatingReminder(true);
-            sessionStorage.setItem('ratingReminderShown', 'true');
+         }).catch(err => {
+            console.error("Failed to load show for reminder:", err);
          });
-      }, 1000); // 1 second delay
+      }, 1500);
 
       return () => clearTimeout(timer);
    }, [user]);
