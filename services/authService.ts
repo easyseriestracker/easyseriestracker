@@ -616,68 +616,95 @@ export const deleteReview = async (reviewId: string) => {
 
 export const likeReview = async (reviewId: string, userId: string) => {
   try {
+    // First, get the current likes
     const { data: review, error } = await supabase
       .from('reviews')
-      .select('likes')
+      .select('*')
       .eq('id', reviewId)
       .single();
       
     if (error) throw error;
     if (!review) throw new Error('Review not found');
 
-    let likes = Array.isArray(review.likes) ? [...review.likes] : [];
-    const likeIndex = likes.indexOf(userId);
+    // Ensure likes is an array
+    const currentLikes = Array.isArray(review.likes) ? [...review.likes] : [];
+    const likeIndex = currentLikes.findIndex(id => id === userId);
     
+    let updatedLikes;
     if (likeIndex > -1) {
-      likes.splice(likeIndex, 1); // Remove like
+      // Remove like
+      updatedLikes = currentLikes.filter(id => id !== userId);
     } else {
-      likes.push(userId); // Add like
+      // Add like
+      updatedLikes = [...currentLikes, userId];
     }
 
-    const { error: updateError } = await supabase
+    // Update the review with the new likes array
+    const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
-      .update({ likes })
-      .eq('id', reviewId);
+      .update({ 
+        likes: updatedLikes,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reviewId)
+      .select()
+      .single();
       
     if (updateError) throw updateError;
     
-    return { likes };
+    return { 
+      likes: updatedLikes,
+      review: updatedReview
+    };
   } catch (error) {
     console.error('Error in likeReview:', error);
-    throw error;
+    throw new Error('Failed to update like. Please try again.');
   }
 };
 
 export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, 'id' | 'createdAt'>) => {
   try {
+    // First, get the current review with replies
     const { data: review, error: fetchError } = await supabase
       .from('reviews')
-      .select('replies')
+      .select('*')
       .eq('id', reviewId)
       .single();
       
     if (fetchError) throw fetchError;
     if (!review) throw new Error('Review not found');
 
+    // Create the new reply with proper typing
     const newReply: ReviewReply = {
       ...reply,
       id: Date.now().toString(),
       createdAt: new Date().toISOString()
     };
 
-    const replies = Array.isArray(review.replies) ? [...review.replies, newReply] : [newReply];
+    // Ensure replies is an array and add the new reply
+    const currentReplies = Array.isArray(review.replies) ? [...review.replies] : [];
+    const updatedReplies = [...currentReplies, newReply];
 
-    const { error: updateError } = await supabase
+    // Update the review with the new replies array
+    const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
-      .update({ replies })
-      .eq('id', reviewId);
+      .update({ 
+        replies: updatedReplies,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reviewId)
+      .select()
+      .single();
       
     if (updateError) throw updateError;
     
-    return { replies };
+    return { 
+      replies: updatedReplies,
+      review: updatedReview
+    };
   } catch (error) {
     console.error('Error in replyToReview:', error);
-    throw error;
+    throw new Error('Failed to post reply. Please try again.');
   }
 };
 
