@@ -2787,8 +2787,8 @@ const Tracking = () => {
 
 
 // Son çevrimiçi olma süresini hesaplayan yardımcı fonksiyon
-const getLastSeenText = (lastSeen: string | undefined) => {
-  if (!lastSeen) return 'Never';
+const getLastSeenText = (lastSeen: string | null | undefined) => {
+  if (!lastSeen || lastSeen === 'null') return 'Never';
   
   const lastSeenDate = new Date(lastSeen);
   const now = new Date();
