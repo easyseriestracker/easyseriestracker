@@ -760,83 +760,85 @@ const Home = () => {
 
             <div className="space-y-16">
                {sections.map((section, idx) => (
-                  <div key={idx} className={section.isCommunity ? "mb-12 p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20" : "mb-12"}>
-                     <div className="flex items-end justify-between mb-4 border-b border-white/5 pb-2">
-                        <h2 className={`text-xl font-black uppercase tracking-tighter ${section.isCommunity ? 'text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-white'}`}>{section.title}</h2>
-                        <Link to={section.link} className="text-xs font-bold text-accentGreen hover:text-white uppercase tracking-widest flex items-center gap-1">
-                           {t('viewAll')} <ChevronRight size={14} />
-                        </Link>
-                     </div>
-                     {section.data.length > 0 ? (
-                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                           {section.data.map(show => <ShowCard key={show.id} show={show} />)}
+                  <React.Fragment key={idx}>
+                     <div className={section.isCommunity ? "mb-12 p-4 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20" : "mb-12"}>
+                        <div className="flex items-end justify-between mb-4 border-b border-white/5 pb-2">
+                           <h2 className={`text-xl font-black uppercase tracking-tighter ${section.isCommunity ? 'text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]' : 'text-white'}`}>{section.title}</h2>
+                           <Link to={section.link} className="text-xs font-bold text-accentGreen hover:text-white uppercase tracking-widest flex items-center gap-1">
+                              {t('viewAll')} <ChevronRight size={14} />
+                           </Link>
                         </div>
-                     ) : (
-                        <div className="text-center text-gray-500 text-sm py-10 font-bold">No data yet.</div>
+                        {section.data.length > 0 ? (
+                           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                              {section.data.map(show => <ShowCard key={show.id} show={show} />)}
+                           </div>
+                        ) : (
+                           <div className="text-center text-gray-500 text-sm py-10 font-bold">No data yet.</div>
+                        )}
+                     </div>
+                     
+                     {/* Community Lists Section - Right after Global Trending */}
+                     {idx === 0 && communityLists.length > 0 && (
+                        <div className="mb-16">
+                           <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
+                              <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {communityLists.slice(0, 6).map(list => (
+                                 <Link
+                                    key={list.id}
+                                    to={`/list/${list.id}`}
+                                    className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
+                                 >
+                                    {/* List Preview */}
+                                    <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
+                                       {list.items.slice(0, 4).map((show: any, idx: number) => (
+                                          <div key={idx} className="relative overflow-hidden">
+                                             <img
+                                                src={getImageUrl(show.poster_path)}
+                                                className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
+                                                alt=""
+                                             />
+                                          </div>
+                                       ))}
+                                       {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
+                                          <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
+                                             <Film size={20} className="text-gray-700" />
+                                          </div>
+                                       ))}
+                                    </div>
+
+                                    {/* List Info */}
+                                    <div className="p-4">
+                                       <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
+                                          {list.name}
+                                       </h3>
+                                       <div className="flex items-center gap-2 mb-2">
+                                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                                             {list.username[0]?.toUpperCase()}
+                                          </div>
+                                          <span className="text-xs font-bold text-gray-400">{list.username}</span>
+                                       </div>
+                                       <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                                          {list.description || 'No description'}
+                                       </p>
+                                       <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
+                                          <span className="flex items-center gap-1">
+                                             <Film size={12} /> {list.items.length}
+                                          </span>
+                                          <span className="flex items-center gap-1">
+                                             <Heart size={12} /> {list.likes || 0}
+                                          </span>
+                                       </div>
+                                    </div>
+                                 </Link>
+                              ))}
+                           </div>
+                        </div>
                      )}
-                  </div>
+                  </React.Fragment>
                ))}
             </div>
-
-            {/* Community Lists Section - After Global Trending */}
-            {communityLists.length > 0 && (
-               <div className="mt-16 mb-16">
-                  <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
-                     <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                     {communityLists.slice(0, 6).map(list => (
-                        <Link
-                           key={list.id}
-                           to={`/list/${list.id}`}
-                           className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
-                        >
-                           {/* List Preview */}
-                           <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
-                              {list.items.slice(0, 4).map((show: any, idx: number) => (
-                                 <div key={idx} className="relative overflow-hidden">
-                                    <img
-                                       src={getImageUrl(show.poster_path)}
-                                       className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
-                                       alt=""
-                                    />
-                                 </div>
-                              ))}
-                              {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
-                                 <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
-                                    <Film size={20} className="text-gray-700" />
-                                 </div>
-                              ))}
-                           </div>
-
-                           {/* List Info */}
-                           <div className="p-4">
-                              <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
-                                 {list.name}
-                              </h3>
-                              <div className="flex items-center gap-2 mb-2">
-                                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                    {list.username[0]?.toUpperCase()}
-                                 </div>
-                                 <span className="text-xs font-bold text-gray-400">{list.username}</span>
-                              </div>
-                              <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-                                 {list.description || 'No description'}
-                              </p>
-                              <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-                                 <span className="flex items-center gap-1">
-                                    <Film size={12} /> {list.items.length}
-                                 </span>
-                                 <span className="flex items-center gap-1">
-                                    <Heart size={12} /> {list.likes || 0}
-                                 </span>
-                              </div>
-                           </div>
-                        </Link>
-                     ))}
-                  </div>
-               </div>
-            )}
          </div>
 
          {/* Rating Reminder Modal */}
@@ -2027,9 +2029,20 @@ const ShowPage = () => {
 
    const handleRate = async (r: number) => {
       if (!user) return navigate('/login');
-      await rateShow(parseInt(id!), r);
-      setUserRating(r);
-      refreshUser();
+      try {
+         await rateShow(parseInt(id!), r);
+         // Immediately update local state
+         setUserRating(r);
+         // Refresh user data in background
+         refreshUser().then(() => {
+            // After refresh, sync userRating with updated user data
+            if (r === 0) {
+               setUserRating(0);
+            }
+         });
+      } catch (error) {
+         console.error('Error rating show:', error);
+      }
    };
 
    const handleWatchlistToggle = async () => {
