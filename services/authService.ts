@@ -45,27 +45,47 @@ export const getAllMembers = async (): Promise<User[]> => {
   }));
 };
 
-// ... (updateUser, updateLastSeen, sendPasswordResetEmail, updatePassword, searchUsers, uploadAvatar, getReviewsByUserId, etc.)
+// Helper function to transform profile to user
+const transformProfileToUser = (profile: any, authUser: any): User => ({
+  id: profile.id,
+  username: profile.username,
+  email: profile.email || authUser?.email,
+  avatar: profile.avatar_url,
+  bio: profile.bio,
+  backgroundTheme: profile.background_theme,
+  settings: profile.settings || { language: 'en', notificationsEnabled: true },
+  topFavorites: profile.top_favorites || [],
+  watchlist: [],
+  ratings: {},
+  lists: [],
+  joinedAt: profile.created_at || new Date().toISOString(),
+  lastSeen: profile.last_seen || null,
+  isOnline: profile.is_online || false
+});
+
+export const updateUser = async (updatedUser: User) => {
   // 1. Update Auth Email if changed
-  // Note: This sends a confirmation email to the new address.
-  // Only update email if it's actually different and both values are valid
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user && updatedUser.email && user.email &&
-    user.email.trim().toLowerCase() !== updatedUser.email.trim().toLowerCase()) {
-    const { error } = await supabase.auth.updateUser({ email: updatedUser.email });
-    if (error) throw error;
+  if (updatedUser.email) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && user.email && user.email.trim().toLowerCase() !== updatedUser.email.trim().toLowerCase()) {
+      const { error } = await supabase.auth.updateUser({ email: updatedUser.email });
+      if (error) throw error;
+    }
   }
 
   // 2. Update Profile Fields
-  await supabase.from('profiles').update({
-    username: updatedUser.username,
-    // email: updatedUser.email, // Removed to avoid 400 error on profile update
-    avatar_url: updatedUser.avatar,
-    bio: updatedUser.bio,
-    background_theme: updatedUser.backgroundTheme,
-    settings: updatedUser.settings,
-    // Note: top_favorites should be updated via updateTopFavorites() only
-  }).eq('id', updatedUser.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      username: updatedUser.username,
+      avatar_url: updatedUser.avatar,
+      bio: updatedUser.bio,
+      background_theme: updatedUser.backgroundTheme,
+      settings: updatedUser.settings,
+    })
+    .eq('id', updatedUser.id);
+
+  if (error) throw error;
 };
 
 export const updateLastSeen = async () => {
