@@ -2409,6 +2409,8 @@ const ShowPage = () => {
    const [reviews, setReviews] = useState<Review[]>([]);
    const [showListModal, setShowListModal] = useState(false);
    const isRatingUpdatingRef = useRef(false);
+   const [isRatingLoading, setIsRatingLoading] = useState(false);
+   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
    const { t } = useTranslation();
    const navigate = useNavigate();
 
