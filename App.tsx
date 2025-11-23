@@ -471,18 +471,30 @@ const ShowCard = ({ show }: { show: Show }) => {
    const isAdded = user?.watchlist.some(w => w.showId === show.id);
    const userRating = user?.ratings?.[show.id];
    const [hoverRating, setHoverRating] = useState(0);
+   const [isTrackLoading, setIsTrackLoading] = useState(false);
+   const [isQuickRateLoading, setIsQuickRateLoading] = useState(false);
 
    const toggleTrack = async () => {
-      if (!user) return;
-      if (isAdded) await removeFromWatchlist(show.id);
-      else await addToWatchlist(show.id);
-      refreshUser();
+      if (!user || isTrackLoading) return;
+      setIsTrackLoading(true);
+      try {
+         if (isAdded) await removeFromWatchlist(show.id);
+         else await addToWatchlist(show.id);
+         await refreshUser();
+      } finally {
+         setIsTrackLoading(false);
+      }
    };
 
    const handleQuickRate = async (r: number) => {
-      if (!user) return;
-      await rateShow(show.id, r);
-      refreshUser();
+      if (!user || isQuickRateLoading) return;
+      setIsQuickRateLoading(true);
+      try {
+         await rateShow(show.id, r);
+         await refreshUser();
+      } finally {
+         setIsQuickRateLoading(false);
+      }
    };
 
    return (
@@ -499,7 +511,8 @@ const ShowCard = ({ show }: { show: Show }) => {
             {user && (
                <button
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleTrack(); }}
-                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/80 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100 hover:scale-110`}
+                  disabled={isTrackLoading}
+                  className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/80 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100 hover:scale-110 ${isTrackLoading ? 'opacity-60 cursor-wait' : ''}`}
                   title={isAdded ? "Untrack" : "Track"}
                >
                   {isAdded ? <Check size={20} /> : <Plus size={20} />}
@@ -524,8 +537,9 @@ const ShowCard = ({ show }: { show: Show }) => {
                      <button
                         key={star}
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleQuickRate(star); }}
+                        disabled={isQuickRateLoading}
                         onMouseEnter={() => setHoverRating(star)}
-                        className="transition-transform hover:scale-125 focus:outline-none"
+                        className="transition-transform hover:scale-125 focus:outline-none disabled:opacity-60 disabled:cursor-wait"
                      >
                         <Star
                            size={20}
@@ -1781,6 +1795,9 @@ const Profile = () => {
    const [favSearch, setFavSearch] = useState('');
    const [favResults, setFavResults] = useState<Show[]>([]);
    const [reviews, setReviews] = useState<Review[]>([]);
+   const [isRatingLoading, setIsRatingLoading] = useState(false);
+   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
+   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
    const [editEmail, setEditEmail] = useState('');
 
@@ -1846,6 +1863,7 @@ const Profile = () => {
    const saveProfile = async () => {
       if (profileUser) {
          try {
+            setIsSavingProfile(true);
             let avatarUrl = editAvatar;
 
             // Upload avatar file if selected
@@ -1864,6 +1882,8 @@ const Profile = () => {
          } catch (e: any) {
             console.error("Profile update error:", e);
             alert("Error updating profile: " + e.message + "\n\nDid you run the setup_db.sql script?");
+         } finally {
+            setIsSavingProfile(false);
          }
       }
    };
@@ -2272,7 +2292,9 @@ const Profile = () => {
                            </p>
                         </div>
                      </div>
-                     <Button onClick={saveProfile} className="w-full">{t('saveChanges')}</Button>
+                     <Button onClick={saveProfile} disabled={isSavingProfile} className="w-full">
+                        {isSavingProfile ? 'Saving...' : t('saveChanges')}
+                     </Button>
                   </div>
                </Modal>
             )}
@@ -2417,12 +2439,14 @@ const ShowPage = () => {
 
    const handleRate = async (r: number) => {
       if (!user) return navigate('/login');
-      if (!id) return;
+      if (!id || isRatingLoading) return;
 
       const showId = parseInt(id);
 
       // Set flag to prevent useEffect from overriding our update
       isRatingUpdatingRef.current = true;
+
+      setIsRatingLoading(true);
 
       try {
          // Call rateShow to update database
@@ -2457,19 +2481,25 @@ const ShowPage = () => {
          setTimeout(() => {
             isRatingUpdatingRef.current = false;
          }, 1000);
+         setIsRatingLoading(false);
       }
    };
 
    const handleWatchlistToggle = async () => {
       if (!user) return navigate('/login');
-      if (!show) return;
+      if (!show || isWatchlistLoading) return;
 
-      if (isInWatchlist) {
-         await removeFromWatchlist(show.id);
-      } else {
-         await addToWatchlist(show.id);
+      setIsWatchlistLoading(true);
+      try {
+         if (isInWatchlist) {
+            await removeFromWatchlist(show.id);
+         } else {
+            await addToWatchlist(show.id);
+         }
+         await refreshUser();
+      } finally {
+         setIsWatchlistLoading(false);
       }
-      refreshUser();
    };
 
    const handleReview = async () => {
