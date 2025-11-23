@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList, ReviewReply } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail, markAsWatched, unmarkAsWatched, getFriendsActivity, followUser, unfollowUser } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -261,6 +261,17 @@ const Modal = ({ children, onClose, title }: any) => (
       <div className="bg-[#1f2329] w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
          <div className="p-6 border-b border-white/10 flex justify-between items-center flex-shrink-0"><h3 className="text-lg font-black text-white uppercase tracking-wider">{title}</h3><button onClick={onClose}><X className="text-gray-400 hover:text-white" /></button></div>
          <div className="p-6 overflow-y-auto custom-scrollbar">{children}</div>
+      </div>
+   </div>
+);
+
+const LoadingOverlay = () => (
+   <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[200] flex items-center justify-center animate-fade-in">
+      <div className="relative">
+         <div className="w-16 h-16 border-4 border-accentGreen/20 border-t-accentGreen rounded-full animate-spin"></div>
+         <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-2 h-2 bg-accentGreen rounded-full animate-pulse"></div>
+         </div>
       </div>
    </div>
 );
@@ -608,7 +619,7 @@ const SimpleShowCard = ({ id }: { id: number }) => {
 
 const Home = () => {
    const { user, refreshUser } = useContext(AuthContext);
-   const [sections, setSections] = useState<{ title: string, data: Show[], link: string, isCommunity?: boolean }[]>([]);
+   const [sections, setSections] = useState<{ title: string, data: Show[], link: string, isCommunity?: boolean, isActivity?: boolean, activityData?: any[] }[]>([]);
    const [heroCandidates, setHeroCandidates] = useState<Show[]>([]);
    const [heroIndex, setHeroIndex] = useState(0);
    const [isHeroPaused, setIsHeroPaused] = useState(false);
@@ -642,6 +653,27 @@ const Home = () => {
             setDataLoaded(true); // Show UI immediately
          }
 
+         // 2. Load Friends Activity (Top Priority if User is logged in)
+         if (user) {
+            try {
+               const activity = await getFriendsActivity();
+               if (activity.length > 0) {
+                  setSections(prev => {
+                     const existing = prev.find(s => s.title === "Friends' Activity");
+                     if (existing) return prev;
+
+                     // Insert at the very top
+                     return [
+                        { title: "Friends' Activity", data: [], link: "/members", isActivity: true, activityData: activity },
+                        ...prev
+                     ];
+                  });
+               }
+            } catch (e) {
+               console.error("Failed to load activity", e);
+            }
+         }
+
          // 3. Load Community Data (Slower, requires DB + TMDB)
          try {
             const commTopList = await getCommunityFavoriteIds();
@@ -655,26 +687,28 @@ const Home = () => {
                getShowsByIds(commTrackIds)
             ]);
 
-            // Insert community sections right after Global Trending
+            // Reorder: Most Watchlisted -> Global Trending -> Community Top
+            // We need to reconstruct the array carefully
             setSections(prev => {
-               const trending = prev[0]; // Global Trending
-               const rest = prev.slice(1); // Others
-               const existingTitles = prev.map(s => s.title);
-               const newSections = [];
+               const activitySection = prev.find(s => s.isActivity);
+               const trendingSection = prev.find(s => s.title === t('globalTrending'));
 
-               // Add community sections if they don't already exist
-               if (commTop.length > 0 && !existingTitles.includes(t('communityTop'))) {
-                  newSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
-               }
-               if (commTrack.length > 0 && !existingTitles.includes(t('mostTracked'))) {
-                  newSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
+               const finalSections = [];
+
+               if (activitySection) finalSections.push(activitySection);
+
+               if (commTrack.length > 0) {
+                  finalSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
                }
 
-               return [
-                  trending,
-                  ...newSections,
-                  ...rest
-               ];
+               if (trendingSection) finalSections.push(trendingSection);
+
+               if (commTop.length > 0) {
+                  finalSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
+               }
+
+               const rest = prev.filter(s => s.title !== t('globalTrending') && !s.isActivity);
+               return [...finalSections, ...rest];
             });
 
             // Load community lists
@@ -910,7 +944,27 @@ const Home = () => {
                               {t('viewAll')} <ChevronRight size={14} />
                            </Link>
                         </div>
-                        {section.data.length > 0 ? (
+                        {section.isActivity ? (
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {section.activityData?.map((item, i) => (
+                                 <Link to={`/show/${item.show.id}`} key={i} className="flex items-center gap-4 bg-[#1f2329] p-3 rounded-xl border border-white/5 hover:border-accentGreen/30 transition group">
+                                    <div className="relative w-12 h-12 flex-shrink-0">
+                                       <div className={`w-12 h-12 rounded-full overflow-hidden border-2 border-accentGreen/20 bg-gradient-to-br ${getAvatarColor(item.username)}`}>
+                                          {item.avatar ? <img src={item.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-white">{item.username[0]}</div>}
+                                       </div>
+                                       <div className="absolute -bottom-1 -right-1 bg-accentGreen text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg">Watched</div>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                       <div className="text-xs text-gray-400 mb-0.5"><span className="font-bold text-white">{item.username}</span> watched</div>
+                                       <div className="font-bold text-white truncate group-hover:text-accentGreen transition-colors">{item.show.name}</div>
+                                    </div>
+                                    <div className="w-10 h-14 rounded bg-gray-800 overflow-hidden flex-shrink-0 shadow-lg">
+                                       <img src={getImageUrl(item.show.poster_path)} className="w-full h-full object-cover" />
+                                    </div>
+                                 </Link>
+                              ))}
+                           </div>
+                        ) : section.data.length > 0 ? (
                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                               {section.data.map(show => <ShowCard key={show.id} show={show} />)}
                            </div>
@@ -1780,7 +1834,7 @@ const Profile = () => {
    const { userId } = useParams();
    const { user: currentUser, refreshUser, handleLogout } = useContext(AuthContext);
    const { setBackground } = useContext(BackgroundContext);
-   const [activeTab, setActiveTab] = useState<'overview' | 'watchlist' | 'ratings' | 'lists'>('overview');
+   const [activeTab, setActiveTab] = useState<'overview' | 'watchlist' | 'ratings' | 'lists' | 'reviews' | 'watched'>('overview');
    const [showEditProfile, setShowEditProfile] = useState(false);
    const [showSettings, setShowSettings] = useState(false);
    const [showFavSearchModal, setShowFavSearchModal] = useState(false);
@@ -1802,6 +1856,8 @@ const Profile = () => {
    const [isRatingLoading, setIsRatingLoading] = useState(false);
    const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
    const [isSavingProfile, setIsSavingProfile] = useState(false);
+   const [isUpdatingFavs, setIsUpdatingFavs] = useState(false);
+   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
    const [editEmail, setEditEmail] = useState('');
 
@@ -1959,25 +2015,50 @@ const Profile = () => {
 
    const addTopFav = async (show: Show) => {
       if (profileUser) {
-         const current = profileUser.topFavorites;
-         let newFavs = [...current];
-         if (newFavs.length < 3 && !newFavs.find(s => s.id === show.id)) {
-            newFavs.push(show);
+         setIsUpdatingFavs(true);
+         try {
+            const current = profileUser.topFavorites;
+            let newFavs = [...current];
+            if (newFavs.length < 3 && !newFavs.find(s => s.id === show.id)) {
+               newFavs.push(show);
+            }
+            await updateTopFavorites(newFavs);
+            await refreshUser();
+            setProfileUser({ ...profileUser, topFavorites: newFavs });
+            setShowFavSearchModal(false);
+            setFavSearch(''); setFavResults([]);
+         } finally {
+            setIsUpdatingFavs(false);
          }
-         await updateTopFavorites(newFavs);
-         await refreshUser();
-         setProfileUser({ ...profileUser, topFavorites: newFavs });
-         setShowFavSearchModal(false);
-         setFavSearch(''); setFavResults([]);
       }
    };
 
    const removeFav = async (id: number) => {
       if (profileUser) {
-         const newFavs = profileUser.topFavorites.filter(s => s.id !== id);
-         await updateTopFavorites(newFavs);
+         setIsUpdatingFavs(true);
+         try {
+            const newFavs = profileUser.topFavorites.filter(s => s.id !== id);
+            await updateTopFavorites(newFavs);
+            await refreshUser();
+            setProfileUser({ ...profileUser, topFavorites: newFavs });
+         } finally {
+            setIsUpdatingFavs(false);
+         }
+      }
+   };
+
+   const handleFollowToggle = async () => {
+      if (!currentUser || !profileUser) return;
+      setIsFollowLoading(true);
+      try {
+         if (currentUser.following.includes(profileUser.id)) {
+            await unfollowUser(profileUser.id);
+         } else {
+            await followUser(profileUser.id);
+         }
          await refreshUser();
-         setProfileUser({ ...profileUser, topFavorites: newFavs });
+      } finally {
+         setIsFollowLoading(false);
       }
    };
 
@@ -1992,6 +2073,7 @@ const Profile = () => {
 
    const populatedWatchlist = profileUser.watchlist;
    const ratedShowIds = Object.keys(profileUser.ratings).map(Number);
+   const watchedShowIds = profileUser.watched || [];
    // Reviews are now in state
    const recentRated = ratedShowIds.slice(-4).reverse();
 
@@ -2002,6 +2084,7 @@ const Profile = () => {
 
    return (
       <div className="min-h-screen bg-[#14181c] relative">
+         {isUpdatingFavs && <LoadingOverlay />}
          {/* Dynamic Background */}
          <div className="absolute inset-0 min-h-screen overflow-hidden pointer-events-none">
             {themeImage && (
@@ -2048,6 +2131,17 @@ const Profile = () => {
                      <Button variant="danger" className="!text-xs sm:!text-sm" onClick={handleLogout}><LogOut size={14} className="sm:w-4 sm:h-4" /></Button>
                   </div>
                )}
+               {!isOwnProfile && currentUser && (
+                  <div className="mb-4">
+                     <Button
+                        variant={currentUser.following.includes(profileUser.id) ? "secondary" : "primary"}
+                        onClick={handleFollowToggle}
+                        disabled={isFollowLoading}
+                     >
+                        {currentUser.following.includes(profileUser.id) ? 'Unfollow' : 'Follow'}
+                     </Button>
+                  </div>
+               )}
             </div>
 
             {/* Modern Tab Navigation */}
@@ -2055,6 +2149,7 @@ const Profile = () => {
                {[
                   { id: 'overview', label: t('overview'), count: null, icon: <Eye size={16} className="sm:w-[18px] sm:h-[18px]" /> },
                   { id: 'watchlist', label: t('watching'), count: profileUser.watchlist.length, icon: <PlayCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> },
+                  { id: 'watched', label: 'Watched', count: watchedShowIds.length, icon: <CheckSquare size={16} className="sm:w-[18px] sm:h-[18px]" /> },
                   { id: 'ratings', label: t('ratedShows'), count: Object.keys(profileUser.ratings).length, icon: <Star size={16} className="sm:w-[18px] sm:h-[18px]" /> },
                   { id: 'lists', label: t('lists'), count: profileUser.lists.length, icon: <List size={16} className="sm:w-[18px] sm:h-[18px]" /> },
                   { id: 'reviews', label: t('reviews'), count: reviews.length, icon: <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" /> },
@@ -2091,7 +2186,7 @@ const Profile = () => {
                      {/* Top Favorites */}
                      <section>
                         <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('topFavorites')}</h2>
-                        <div className="grid grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                            {[0, 1, 2].map(i => {
                               const show = profileUser.topFavorites[i];
                               return (
@@ -2120,7 +2215,7 @@ const Profile = () => {
                      {recentRated.length > 0 && (
                         <section>
                            <h2 className="text-sm font-bold uppercase text-gray-400 tracking-widest mb-6 text-shadow">{t('recentlyRated')}</h2>
-                           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                               {recentRated.map(id => <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />)}
                            </div>
                         </section>
@@ -2182,7 +2277,7 @@ const Profile = () => {
                )}
 
                {activeTab === 'ratings' && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                      {ratedShowIds.map(id => (
                         <RatedShowCard key={id} id={id} rating={profileUser.ratings[id]} />
                      ))}
@@ -2190,12 +2285,23 @@ const Profile = () => {
                )}
 
                {activeTab === 'watchlist' && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                      {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).map(item => (
                         <SimpleShowCard key={item.showId} id={item.showId} />
                      ))}
                      {populatedWatchlist.filter(item => item && item.showId && !isNaN(item.showId)).length === 0 && (
                         <div className="col-span-full text-center text-gray-500 py-12">No shows in watchlist yet.</div>
+                     )}
+                  </div>
+               )}
+
+               {activeTab === 'watched' && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                     {watchedShowIds.map(id => (
+                        <SimpleShowCard key={id} id={id} />
+                     ))}
+                     {watchedShowIds.length === 0 && (
+                        <div className="col-span-full text-center text-gray-500 py-12">No watched shows yet.</div>
                      )}
                   </div>
                )}
@@ -2419,6 +2525,8 @@ const ShowPage = () => {
    const navigate = useNavigate();
 
    const isInWatchlist = user?.watchlist.some(w => w.showId === (show?.id || 0));
+   const isWatched = user?.watched?.includes(show?.id || 0);
+   const [isWatchedLoading, setIsWatchedLoading] = useState(false);
 
    useEffect(() => {
       // Disable global background for this page to manage layout manually
@@ -2508,6 +2616,23 @@ const ShowPage = () => {
       }
    };
 
+   const handleWatchedToggle = async () => {
+      if (!user) return navigate('/login');
+      if (!show || isWatchedLoading) return;
+
+      setIsWatchedLoading(true);
+      try {
+         if (isWatched) {
+            await unmarkAsWatched(show.id);
+         } else {
+            await markAsWatched(show.id);
+         }
+         await refreshUser();
+      } finally {
+         setIsWatchedLoading(false);
+      }
+   };
+
    const handleReview = async () => {
       if (!user) return navigate('/login');
       if (!reviewContent.trim()) return;
@@ -2549,6 +2674,7 @@ const ShowPage = () => {
 
    return (
       <div className="min-h-screen bg-[#14181c] relative">
+         {(isRatingLoading || isWatchlistLoading || isWatchedLoading) && <LoadingOverlay />}
          {/* Local Fixed Background to ensure visibility behind UI as requested */}
          {show?.backdrop_path && (
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -2569,13 +2695,20 @@ const ShowPage = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                      <button
                         onClick={handleWatchlistToggle}
-                        className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all duration-300 ${isInWatchlist ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                        className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all duration-300 ${isInWatchlist ? 'bg-accentGreen/10 border-accentGreen/50 text-accentGreen' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
                      >
                         {isInWatchlist ? <Check size={20} /> : <Plus size={20} />}
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{isInWatchlist ? 'Added' : 'Track'}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{isInWatchlist ? 'Added' : 'Watchlist'}</span>
+                     </button>
+                     <button
+                        onClick={handleWatchedToggle}
+                        className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all duration-300 ${isWatched ? 'bg-blue-500/10 border-blue-500/50 text-blue-500' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                     >
+                        {isWatched ? <CheckSquare size={20} /> : <Square size={20} />}
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{isWatched ? 'Watched' : 'Watched?'}</span>
                      </button>
                      <button
                         onClick={() => user ? setShowListModal(true) : navigate('/login')}
@@ -2758,13 +2891,19 @@ const ShowPage = () => {
 const Tracking = () => {
    const { user } = useContext(AuthContext);
    const [shows, setShows] = useState<ShowDetails[]>([]);
+   const [isLoading, setIsLoading] = useState(false);
    const { t } = useTranslation();
 
    useEffect(() => {
       if (user) {
          const load = async () => {
-            const details = await getShowsByIds(user.watchlist.map(w => w.showId));
-            setShows(details as any);
+            setIsLoading(true);
+            try {
+               const details = await getShowsByIds(user.watchlist.map(w => w.showId));
+               setShows(details as any);
+            } finally {
+               setIsLoading(false);
+            }
          };
          load();
       }
@@ -2781,6 +2920,7 @@ const Tracking = () => {
 
    return (
       <div className="pt-32 px-6 max-w-7xl mx-auto min-h-screen">
+         {isLoading && <LoadingOverlay />}
          <div className="flex justify-between items-end mb-10 border-b border-white/10 pb-6">
             <div>
                <h1 className="text-5xl font-black text-white uppercase tracking-tighter text-glow mb-2">{t('myWatchlist')}</h1>

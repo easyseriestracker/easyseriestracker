@@ -19,6 +19,8 @@ export interface User {
   joinedAt: string;
   lastSeen?: string;
   isOnline?: boolean;
+  watched: number[]; // Array of show IDs
+  following: string[]; // Array of user IDs
 }
 
 export interface List {

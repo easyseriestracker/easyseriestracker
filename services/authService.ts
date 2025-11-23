@@ -32,7 +32,9 @@ const transformProfileToUser = (profile: any, authUser: any): User => {
     lists: [],
     joinedAt: profile.created_at || new Date().toISOString(),
     lastSeen: profile.last_seen || null,
-    isOnline: isOnline
+    isOnline: isOnline,
+    watched: profile.watched || [],
+    following: profile.following || []
   };
 };
 
@@ -436,6 +438,103 @@ export const rateShow = async (showId: number, rating: number) => {
       throw error;
     }
   }
+};
+
+// --- WATCHED SYSTEM ---
+export const markAsWatched = async (showId: number) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase.from('profiles').select('watched').eq('id', user.id).single();
+  const currentWatched = profile?.watched || [];
+
+  if (!currentWatched.includes(showId)) {
+    await supabase.from('profiles').update({ watched: [...currentWatched, showId] }).eq('id', user.id);
+  }
+};
+
+export const unmarkAsWatched = async (showId: number) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase.from('profiles').select('watched').eq('id', user.id).single();
+  const currentWatched = profile?.watched || [];
+
+  const newWatched = currentWatched.filter((id: number) => id !== showId);
+  await supabase.from('profiles').update({ watched: newWatched }).eq('id', user.id);
+};
+
+// --- FOLLOWING SYSTEM ---
+export const followUser = async (targetUserId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase.from('profiles').select('following').eq('id', user.id).single();
+  const currentFollowing = profile?.following || [];
+
+  if (!currentFollowing.includes(targetUserId)) {
+    await supabase.from('profiles').update({ following: [...currentFollowing, targetUserId] }).eq('id', user.id);
+  }
+};
+
+export const unfollowUser = async (targetUserId: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase.from('profiles').select('following').eq('id', user.id).single();
+  const currentFollowing = profile?.following || [];
+
+  const newFollowing = currentFollowing.filter((id: string) => id !== targetUserId);
+  await supabase.from('profiles').update({ following: newFollowing }).eq('id', user.id);
+};
+
+export const getFriendsActivity = async (): Promise<{ username: string, avatar: string, show: Show }[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabase.from('profiles').select('following').eq('id', user.id).single();
+  const followingIds = profile?.following || [];
+
+  if (followingIds.length === 0) return [];
+
+  // Fetch profiles of followed users
+  const { data: friends } = await supabase.from('profiles').select('id, username, avatar_url, watched').in('id', followingIds);
+  if (!friends) return [];
+
+  const activity: { username: string, avatar: string, show: Show }[] = [];
+
+  // Collect all watched shows from friends
+  // Note: This is a bit expensive if friends have many watched shows. 
+  // For now, we'll take the last 5 watched shows from each friend.
+  // Ideally, we'd have a separate 'activities' table.
+
+  const allShowIds = new Set<number>();
+  friends.forEach((friend: any) => {
+    const watched = friend.watched || [];
+    watched.slice(-3).forEach((showId: number) => allShowIds.add(showId));
+  });
+
+  if (allShowIds.size === 0) return [];
+
+  const shows = await getShowsByIds(Array.from(allShowIds));
+  const showMap = new Map(shows.map(s => [s.id, s]));
+
+  friends.forEach((friend: any) => {
+    const watched = friend.watched || [];
+    watched.slice(-3).reverse().forEach((showId: number) => {
+      const show = showMap.get(showId);
+      if (show) {
+        activity.push({
+          username: friend.username,
+          avatar: friend.avatar_url,
+          show
+        });
+      }
+    });
+  });
+
+  // Shuffle or sort? Let's just return as is (grouped by user roughly)
+  return activity;
 };
 
 // --- LISTS SYSTEM ---
