@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { User, Show, Review, List, ReviewReply, WatchlistItem } from '../types';
+import { User, Show, Review, List, ReviewReply, WatchlistItem, ShowDetails } from '../types';
 
 // --- HELPER: Transform Profile to User ---
 import { getShowsByIds } from './tmdbService';
@@ -11,22 +11,30 @@ import { getShowsByIds } from './tmdbService';
 
 
 // Helper function to transform profile to user
-const transformProfileToUser = (profile: any, authUser: any): User => ({
-  id: profile.id,
-  username: profile.username,
-  email: profile.email || authUser?.email,
-  avatar: profile.avatar_url,
-  bio: profile.bio,
-  backgroundTheme: profile.background_theme,
-  settings: profile.settings || { language: 'en', notificationsEnabled: true },
-  topFavorites: profile.top_favorites || [],
-  watchlist: [],
-  ratings: {},
-  lists: [],
-  joinedAt: profile.created_at || new Date().toISOString(),
-  lastSeen: profile.last_seen || null,
-  isOnline: profile.is_online || false
-});
+const transformProfileToUser = (profile: any, authUser: any): User => {
+  // Calculate online status based on last_seen timestamp
+  // If last_seen is within the last 2 minutes, consider online
+  const isOnline = profile.is_online &&
+    profile.last_seen &&
+    (new Date().getTime() - new Date(profile.last_seen).getTime() < 2 * 60 * 1000);
+
+  return {
+    id: profile.id,
+    username: profile.username,
+    email: profile.email || authUser?.email,
+    avatar: profile.avatar_url,
+    bio: profile.bio,
+    backgroundTheme: profile.background_theme,
+    settings: profile.settings || { language: 'en', notificationsEnabled: true },
+    topFavorites: profile.top_favorites || [],
+    watchlist: [],
+    ratings: {},
+    lists: [],
+    joinedAt: profile.created_at || new Date().toISOString(),
+    lastSeen: profile.last_seen || null,
+    isOnline: isOnline
+  };
+};
 
 export const updateUser = async (updatedUser: User) => {
   // 1. Update Auth Email if changed
@@ -56,30 +64,14 @@ export const updateUser = async (updatedUser: User) => {
 export const updateLastSeen = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
+
   await supabase
     .from('profiles')
-    .update({ 
+    .update({
       last_seen: new Date().toISOString(),
-      is_online: true // Çevrimiçi durumunu güncelle
+      is_online: true
     })
     .eq('id', user.id);
-    
-  // 5 dakika sonra çevrimdışı olarak işaretle
-  setTimeout(async () => {
-    const { data: lastActivity } = await supabase
-      .from('profiles')
-      .select('last_seen')
-      .eq('id', user.id)
-      .single();
-      
-    // Eğer son aktivite 5 dakikadan eskiyse çevrimdışı yap
-    if (lastActivity && new Date(lastActivity.last_seen).getTime() < Date.now() - 5 * 60 * 1000) {
-      await supabase
-        .from('profiles')
-        .update({ is_online: false })
-        .eq('id', user.id);
-    }
-  }, 5 * 60 * 1000); // 5 dakika sonra kontrol et
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
@@ -322,6 +314,10 @@ export const register = async (username: string, email: string, password: string
 };
 
 export const logout = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await supabase.from('profiles').update({ is_online: false }).eq('id', user.id);
+  }
   await supabase.auth.signOut();
 };
 
@@ -642,14 +638,14 @@ export const likeReview = async (reviewId: string, userId: string) => {
       .select('*')
       .eq('id', reviewId)
       .single();
-      
+
     if (error) throw error;
     if (!review) throw new Error('Review not found');
 
     // Ensure likes is an array
     const currentLikes = Array.isArray(review.likes) ? [...review.likes] : [];
     const likeIndex = currentLikes.findIndex(id => id === userId);
-    
+
     let updatedLikes;
     if (likeIndex > -1) {
       // Remove like
@@ -660,10 +656,10 @@ export const likeReview = async (reviewId: string, userId: string) => {
     }
 
     // Update the review with the new likes array
-    const updateData: any = { 
-      likes: updatedLikes 
+    const updateData: any = {
+      likes: updatedLikes
     };
-    
+
     // Try to update without timestamp first
     const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
@@ -671,10 +667,10 @@ export const likeReview = async (reviewId: string, userId: string) => {
       .eq('id', reviewId)
       .select()
       .single();
-      
+
     if (updateError) throw updateError;
-    
-    return { 
+
+    return {
       likes: updatedLikes,
       review: updatedReview
     };
@@ -692,7 +688,7 @@ export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, '
       .select('*')
       .eq('id', reviewId)
       .single();
-      
+
     if (fetchError) throw fetchError;
     if (!review) throw new Error('Review not found');
 
@@ -711,7 +707,7 @@ export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, '
     const updateData: any = {
       replies: updatedReplies
     };
-    
+
     // Try to update without timestamp first
     const { data: updatedReview, error: updateError } = await supabase
       .from('reviews')
@@ -719,10 +715,10 @@ export const replyToReview = async (reviewId: string, reply: Omit<ReviewReply, '
       .eq('id', reviewId)
       .select()
       .single();
-      
+
     if (updateError) throw updateError;
-    
-    return { 
+
+    return {
       replies: updatedReplies,
       review: updatedReview
     };

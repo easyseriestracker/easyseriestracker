@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList } from './types';
+import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList, ReviewReply } from './types';
 import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
@@ -1421,9 +1421,9 @@ const ReviewDetailPage = () => {
          navigate('/login');
          return;
       }
-      
+
       if (!review || !replyContent.trim()) return;
-      
+
       try {
          // Optimistically update the UI
          const tempReplyId = `temp-${Date.now()}`;
@@ -1435,7 +1435,7 @@ const ReviewDetailPage = () => {
             content: replyContent.trim(),
             createdAt: new Date().toISOString()
          };
-         
+
          setReview(prev => {
             if (!prev) return null;
             return {
@@ -1443,9 +1443,9 @@ const ReviewDetailPage = () => {
                replies: [...(prev.replies || []), newReply]
             };
          });
-         
+
          setReplyContent('');
-         
+
          // Make the API call
          const response = await replyToReview(review.id, {
             userId: user.id,
@@ -1453,16 +1453,16 @@ const ReviewDetailPage = () => {
             avatar: user.avatar,
             content: replyContent.trim()
          });
-         
+
          // Update with the actual data from the server
          if (response?.review) {
-            setReview(prev => prev ? ({ 
-               ...response.review, 
-               showName: prev.showName, 
-               showPoster: prev.showPoster 
+            setReview(prev => prev ? ({
+               ...response.review,
+               showName: prev.showName,
+               showPoster: prev.showPoster
             }) : response.review);
          }
-         
+
          // Scroll to the bottom of replies
          setTimeout(() => {
             const repliesContainer = document.querySelector('.replies-container');
@@ -1470,11 +1470,11 @@ const ReviewDetailPage = () => {
                repliesContainer.scrollTop = repliesContainer.scrollHeight;
             }
          }, 100);
-         
+
       } catch (error) {
          console.error('Error sending reply:', error);
          alert('Failed to send reply. Please try again.');
-         
+
          // Revert the optimistic update on error
          setReview(prev => {
             if (!prev) return null;
@@ -1584,7 +1584,7 @@ const ReviewDetailPage = () => {
                         }}
                         className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition shadow-md hover:-translate-y-0.5 ${user && review.likes?.includes(user.id) ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'}`}
                      >
-                        <Heart size={20} fill={user && review.likes?.includes(user.id) ? "currentColor" : "none"} /> 
+                        <Heart size={20} fill={user && review.likes?.includes(user.id) ? "currentColor" : "none"} />
                         {review.likes?.length || 0} {review.likes?.length === 1 ? 'Like' : 'Likes'}
                      </button>
                   </div>
@@ -1597,10 +1597,10 @@ const ReviewDetailPage = () => {
                            {user ? (user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.username} /> : user.username[0]) : '?'}
                         </div>
                         <div className="flex-1">
-                           <input 
-                              value={replyContent} 
-                              onChange={e => setReplyContent(e.target.value)} 
-                              placeholder={user ? "Write your reply..." : "Log in to reply"} 
+                           <input
+                              value={replyContent}
+                              onChange={e => setReplyContent(e.target.value)}
+                              placeholder={user ? "Write your reply..." : "Log in to reply"}
                               className="w-full bg-transparent border-b border-white/20 focus:border-accentGreen outline-none text-white pb-2 text-sm transition disabled:opacity-50"
                               disabled={!user}
                               onKeyDown={async (e) => {
@@ -1615,17 +1615,17 @@ const ReviewDetailPage = () => {
                            <div className="flex justify-between items-center mt-2">
                               {!user && (
                                  <span className="text-xs text-gray-500">
-                                    <button 
-                                       onClick={() => navigate('/login')} 
+                                    <button
+                                       onClick={() => navigate('/login')}
                                        className="text-accentGreen hover:underline"
                                     >
                                        Log in
                                     </button> to reply
                                  </span>
                               )}
-                              <Button 
-                                 onClick={handleReply} 
-                                 variant="secondary" 
+                              <Button
+                                 onClick={handleReply}
+                                 variant="secondary"
                                  className="!py-1.5 !px-4 !text-xs font-bold ml-auto"
                                  disabled={!user || !replyContent.trim()}
                               >
@@ -2824,16 +2824,16 @@ const Tracking = () => {
 
 // Son çevrimiçi olma süresini hesaplayan yardımcı fonksiyon
 const getLastSeenText = (lastSeen: string | null | undefined) => {
-  if (!lastSeen || lastSeen === 'null') return 'Never';
-  
-  const lastSeenDate = new Date(lastSeen);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - lastSeenDate.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) return 'Just now';
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  return `${Math.floor(diffInSeconds / 86400)}d ago`;
+   if (!lastSeen || lastSeen === 'null') return 'Never';
+
+   const lastSeenDate = new Date(lastSeen);
+   const now = new Date();
+   const diffInSeconds = Math.floor((now.getTime() - lastSeenDate.getTime()) / 1000);
+
+   if (diffInSeconds < 60) return 'Just now';
+   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+   return `${Math.floor(diffInSeconds / 86400)}d ago`;
 };
 
 const Members = () => {
@@ -2853,7 +2853,7 @@ const Members = () => {
          });
          setMembers(sortedMembers);
       };
-      
+
       loadMembers();
       // Her 30 saniyede bir güncelle
       const interval = setInterval(loadMembers, 30000);
@@ -2899,8 +2899,8 @@ const Members = () => {
                                     )}
                                  </div>
                                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    {isOnline 
-                                       ? 'Active now' 
+                                    {isOnline
+                                       ? 'Active now'
                                        : `Last seen ${lastSeenText}`
                                     }
                                  </div>
@@ -3138,9 +3138,9 @@ const App = () => {
 
    useEffect(() => {
       refreshUser();
-      // Update last seen every 5 minutes
+      // Update last seen every 1 minute
       updateLastSeen();
-      const interval = setInterval(updateLastSeen, 5 * 60 * 1000);
+      const interval = setInterval(updateLastSeen, 60 * 1000);
       return () => clearInterval(interval);
    }, []);
 

@@ -18,6 +18,7 @@ export interface User {
   };
   joinedAt: string;
   lastSeen?: string;
+  isOnline?: boolean;
 }
 
 export interface List {
