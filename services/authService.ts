@@ -564,6 +564,76 @@ export const getFriendsActivity = async (): Promise<{ username: string, avatar: 
   return activity.sort(() => Math.random() - 0.5);
 };
 
+export const getFollowers = async (userId: string): Promise<User[]> => {
+  // Get all profiles that have this userId in their following array
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .contains('following', [userId]);
+
+  if (!data) return [];
+
+  return data.map((p: any) => ({
+    id: p.id,
+    email: p.email || '',
+    username: p.username,
+    bio: p.bio || '',
+    avatar: p.avatar_url,
+    backgroundTheme: p.background_theme,
+    watchlist: [],
+    ratings: {},
+    topFavorites: p.top_favorites || [],
+    lists: [],
+    settings: {
+      notificationsEnabled: true,
+      language: p.language || 'en'
+    },
+    createdAt: p.created_at,
+    joinedAt: p.created_at,
+    watched: p.watched || [],
+    following: p.following || []
+  }));
+};
+
+export const getFollowing = async (userId: string): Promise<User[]> => {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('following')
+    .eq('id', userId)
+    .single();
+
+  const followingIds = profile?.following || [];
+  if (followingIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', followingIds);
+
+  if (!data) return [];
+
+  return data.map((p: any) => ({
+    id: p.id,
+    email: p.email || '',
+    username: p.username,
+    bio: p.bio || '',
+    avatar: p.avatar_url,
+    backgroundTheme: p.background_theme,
+    watchlist: [],
+    ratings: {},
+    topFavorites: p.top_favorites || [],
+    lists: [],
+    settings: {
+      notificationsEnabled: true,
+      language: p.language || 'en'
+    },
+    createdAt: p.created_at,
+    joinedAt: p.created_at,
+    watched: p.watched || [],
+    following: p.following || []
+  }));
+};
+
 // --- LISTS SYSTEM ---
 
 export const createList = async (name: string, description: string, isPrivate: boolean): Promise<List | null> => {

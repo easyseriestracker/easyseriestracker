@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { User, Show, ShowDetails, Review, WatchlistItem, List as UserList, ReviewReply } from './types';
-import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail, markAsWatched, unmarkAsWatched, getFriendsActivity, followUser, unfollowUser } from './services/authService';
+import { getCurrentUser, getUserById, login, register, logout, addToWatchlist, removeFromWatchlist, getAllMembers, updateTopFavorites, rateShow, getCommunityFavoriteIds, getMostWatchlistedIds, addReview, getReviewsByShowId, updateUser, getReviewsByUserId, createList, addShowToList, likeReview, replyToReview, getListById, likeList, getReviewById, deleteReview, deleteReply, addCommentToList, getUserRatingForShow, uploadAvatar, getAllPublicLists, reorderListItems, submitSuggestion, getSuggestions, deleteSuggestion, removeShowFromList, updateLastSeen, searchUsers, Suggestion, sendPasswordResetEmail, markAsWatched, unmarkAsWatched, getFriendsActivity, followUser, unfollowUser, getFollowers, getFollowing } from './services/authService';
 import { getTrendingShows, searchShows, getImageUrl, getShowDetails, getShowsByIds, getClassicShows, getComedyShows, getSciFiShows, getAllCuratedShows } from './services/tmdbService';
 import { checkAndNotify } from './services/notificationService';
 import { Film, Search, User as UserIcon, LogOut, Settings, Plus, Check, Bell, Heart, X, Star, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Calendar, Clock, MessageSquare, PlayCircle, Globe, Edit2, Filter, Image as ImageIcon, Type, Key, List, Grid, MoreHorizontal, Layout, ThumbsUp, Reply, ArrowLeft, Trash2, RefreshCcw, Eye, EyeOff, Lock, CheckSquare, Square, Mail, Menu, Users } from 'lucide-react';
@@ -359,53 +359,53 @@ const Navbar = () => {
             </button>
 
             <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-               {/* Navigation Links - Slide left when search opens */}
-               <div className={`flex items-center gap-8 transition-all duration-500 ease-out ${showSearch ? 'opacity-0 -translate-x-20 pointer-events-none absolute' : 'opacity-100 translate-x-0 relative'}`}>
-                  <Link to="/members" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/members' ? 'text-white' : 'text-gray-400'}`}>{t('community')}</Link>
-                  <Link to="/browse" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/browse' ? 'text-white' : 'text-gray-400'}`}>{t('discoverShows') || 'Discover'}</Link>
+               {/* Navigation Links - Slide left but stay visible */}
+               <div className={`flex items-center gap-6 transition-all duration-300 ${showSearch ? '-translate-x-4' : 'translate-x-0'}`}>
+                  <Link to="/members" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors whitespace-nowrap ${location.pathname === '/members' ? 'text-white' : 'text-gray-400'}`}>{t('community')}</Link>
+                  <Link to="/browse" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors whitespace-nowrap ${location.pathname === '/browse' ? 'text-white' : 'text-gray-400'}`}>{t('discoverShows') || 'Discover'}</Link>
                   {user && (
-                     <Link to="/watchlist" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/watchlist' ? 'text-white' : 'text-gray-400'}`}>{t('watchlist')}</Link>
+                     <Link to="/watchlist" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors whitespace-nowrap ${location.pathname === '/watchlist' ? 'text-white' : 'text-gray-400'}`}>{t('watchlist')}</Link>
                   )}
                </div>
 
                {/* Search & Profile Container */}
-               <div className="flex items-center gap-6">
+               <div className="flex items-center gap-4">
                   {/* Search Bar - Expands */}
-                  <div className={`relative flex items-center transition-all duration-500 ease-out ${showSearch ? 'w-[600px]' : 'w-auto'}`} ref={searchRef}>
+                  <div className={`relative flex items-center transition-all duration-300 ${showSearch ? 'w-[400px]' : 'w-auto'}`} ref={searchRef}>
                      {/* Expanded Input */}
-                     <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-full transition-all duration-500 ${showSearch ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                     <div className={`absolute right-0 top-1/2 -translate-y-1/2 transition-all duration-300 ${showSearch ? 'w-full opacity-100 scale-100' : 'w-0 opacity-0 scale-95 pointer-events-none'}`}>
                         <div className="relative w-full group">
-                           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accentGreen transition-colors" size={22} />
+                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accentGreen transition-colors" size={18} />
                            <input
                               id="nav-search"
                               type="text"
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               placeholder={t('searchPlaceholder')}
-                              className="w-full bg-[#1f2329] border border-white/10 rounded-full pl-14 pr-12 py-4 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen/50 focus:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition-all"
+                              className="w-full bg-[#1f2329] border border-white/10 rounded-full pl-11 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen/50 transition-all"
                            />
                            {searchQuery && (
-                              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1 hover:bg-white/10 rounded-full transition">
-                                 <X size={18} />
+                              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition">
+                                 <X size={16} />
                               </button>
                            )}
 
                            {/* Search Results Dropdown */}
                            {(searchResults.shows.length > 0 || searchResults.users.length > 0) && (
-                              <div className="absolute top-full left-0 right-0 mt-4 bg-[#1f2329] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in-up">
+                              <div className="absolute top-full left-0 right-0 mt-2 bg-[#1f2329] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
                                  {searchResults.shows.length > 0 && (
                                     <div className="p-2">
-                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-4 py-2">Shows</div>
+                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-3 py-2">Shows</div>
                                        {searchResults.shows.map(s => (
                                           <button
                                              key={s.id}
                                              onClick={() => { navigate(`/show/${s.id}`); setShowSearch(false); setSearchQuery(''); }}
-                                             className="w-full flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition text-left group/item"
+                                             className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
                                           >
-                                             <img src={getImageUrl(s.poster_path)} className="w-12 h-16 object-cover rounded-lg bg-gray-800 shadow-md group-hover/item:scale-105 transition-transform" />
+                                             <img src={getImageUrl(s.poster_path)} className="w-10 h-14 object-cover rounded bg-gray-800" />
                                              <div className="min-w-0 flex-1">
-                                                <div className="text-base font-bold text-white truncate group-hover/item:text-accentGreen transition-colors">{s.name}</div>
-                                                <div className="text-xs text-gray-500 font-medium">{s.first_air_date?.split('-')[0]}</div>
+                                                <div className="text-sm font-bold text-white truncate">{s.name}</div>
+                                                <div className="text-xs text-gray-500">{s.first_air_date?.split('-')[0]}</div>
                                              </div>
                                           </button>
                                        ))}
@@ -413,17 +413,17 @@ const Navbar = () => {
                                  )}
                                  {searchResults.users.length > 0 && (
                                     <div className="p-2 border-t border-white/5">
-                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-4 py-2">Users</div>
+                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-3 py-2">Users</div>
                                        {searchResults.users.map(u => (
                                           <button
                                              key={u.id}
                                              onClick={() => { navigate(`/profile/${u.id}`); setShowSearch(false); setSearchQuery(''); }}
-                                             className="w-full flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition text-left"
+                                             className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
                                           >
-                                             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(u.username)} flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
+                                             <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(u.username)} flex items-center justify-center text-white text-xs font-bold`}>
                                                 {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover rounded-full" /> : u.username[0]}
                                              </div>
-                                             <div className="text-base font-bold text-white truncate">{u.username}</div>
+                                             <div className="text-sm font-bold text-white truncate">{u.username}</div>
                                           </button>
                                        ))}
                                     </div>
@@ -436,31 +436,31 @@ const Navbar = () => {
                      {/* Search Toggle Button (Visible when closed) */}
                      <button
                         onClick={() => { setShowSearch(true); setTimeout(() => document.getElementById('nav-search')?.focus(), 100); }}
-                        className={`text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                        className={`text-gray-400 hover:text-white transition-all p-2 hover:bg-white/5 rounded-full ${showSearch ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}
                      >
-                        <Search size={20} />
+                        <Search size={18} />
                      </button>
                   </div>
 
-                  {/* Profile / Login - Hides when search is open */}
-                  <div className={`flex items-center gap-6 transition-all duration-500 ${showSearch ? 'opacity-0 translate-x-10 pointer-events-none hidden' : 'opacity-100 translate-x-0'}`}>
+                  {/* Profile / Login - Always visible */}
+                  <div className="flex items-center gap-4">
                      {user ? (
                         <>
                            <div className="h-5 w-px bg-white/10 block" />
-                           <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition group">
-                              <div className="text-right block">
-                                 <span className="block text-xs font-bold text-white group-hover:text-accentGreen transition-colors">{user.username}</span>
+                           <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition group">
+                              <div className="text-right hidden lg:block">
+                                 <span className="block text-xs font-bold text-white group-hover:text-accentGreen transition-colors whitespace-nowrap">{user.username}</span>
                               </div>
-                              <div className={`w-9 h-9 rounded-full ring-2 ring-transparent group-hover:ring-accentGreen overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)}`}>
+                              <div className={`w-8 h-8 rounded-full ring-2 ring-transparent group-hover:ring-accentGreen overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)} flex-shrink-0`}>
                                  {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
                               </div>
                            </Link>
                         </>
                      ) : (
-                        <div className="flex items-center gap-4">
-                           <Link to="/login" className="text-xs font-bold uppercase text-gray-300 hover:text-white tracking-wider">{t('login')}</Link>
+                        <div className="flex items-center gap-3">
+                           <Link to="/login" className="text-xs font-bold uppercase text-gray-300 hover:text-white tracking-wider whitespace-nowrap">{t('login')}</Link>
                            <Link to="/register">
-                              <Button variant="primary" className="!py-2 !px-5 !rounded-full text-xs">{t('joinNow')}</Button>
+                              <Button variant="primary" className="!py-2 !px-4 !rounded-full text-xs whitespace-nowrap">{t('joinNow')}</Button>
                            </Link>
                         </div>
                      )}
@@ -679,9 +679,18 @@ const Home = () => {
                      const existing = prev.find(s => s.title === "Friends' Activity");
                      if (existing) return prev;
 
+                     // Extract unique shows from activity, limit to 6
+                     const uniqueShows = new Map();
+                     activity.forEach(item => {
+                        if (!uniqueShows.has(item.show.id)) {
+                           uniqueShows.set(item.show.id, item.show);
+                        }
+                     });
+                     const shows = Array.from(uniqueShows.values()).slice(0, 6);
+
                      // Insert at the very top
                      return [
-                        { title: "Friends' Activity", data: [], link: "/members", isActivity: true, activityData: activity },
+                        { title: "Friends' Activity", data: shows, link: "/members" },
                         ...prev
                      ];
                   });
@@ -707,13 +716,13 @@ const Home = () => {
             // Reorder: Friends Activity -> Community Lists -> Most Watchlisted -> Community Top -> Global Trending
             setSections(prev => {
                // 1. Extract special sections
-               const activitySection = prev.find(s => s.isActivity);
+               const activitySection = prev.find(s => s.title === "Friends' Activity");
                const trendingSection = prev.find(s => s.title === t('globalTrending'));
 
                // 2. Filter out sections we are about to re-add or re-order
                const otherSections = prev.filter(s =>
                   s.title !== t('globalTrending') &&
-                  !s.isActivity &&
+                  s.title !== "Friends' Activity" &&
                   s.title !== t('mostTracked') &&
                   s.title !== t('communityTop') &&
                   s.title !== 'Community Lists'
@@ -976,39 +985,11 @@ const Home = () => {
                               {t('viewAll')} <ChevronRight size={14} />
                            </Link>
                         </div>
-                        {section.isActivity ? (
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {section.activityData?.map((item, i) => (
-                                 <Link to={`/show/${item.show.id}`} key={i} className="flex items-center gap-4 bg-[#1f2329] p-3 rounded-xl border border-white/5 hover:border-accentGreen/30 transition group">
-                                    <div className="relative w-12 h-12 flex-shrink-0">
-                                       <div className={`w-12 h-12 rounded-full overflow-hidden border-2 border-accentGreen/20 bg-gradient-to-br ${getAvatarColor(item.username)}`}>
-                                          {item.avatar ? <img src={item.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-white">{item.username[0]}</div>}
-                                       </div>
-                                       {item.type === 'rated' ? (
-                                          <div className="absolute -bottom-1 -right-1 bg-accentOrange text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-0.5">
-                                             <Star size={6} fill="black" /> {item.rating}
-                                          </div>
-                                       ) : (
-                                          <div className="absolute -bottom-1 -right-1 bg-accentGreen text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg">Watched</div>
-                                       )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                       <div className="text-xs text-gray-400 mb-0.5">
-                                          <span className="font-bold text-white">{item.username}</span> {item.type === 'rated' ? 'rated' : 'watched'}
-                                       </div>
-                                       <div className="font-bold text-white truncate group-hover:text-accentGreen transition-colors">{item.show.name}</div>
-                                    </div>
-                                    <div className="w-10 h-14 rounded bg-gray-800 overflow-hidden flex-shrink-0 shadow-lg">
-                                       <img src={getImageUrl(item.show.poster_path)} className="w-full h-full object-cover" />
-                                    </div>
-                                 </Link>
-                              ))}
-                           </div>
-                        ) : section.data.length > 0 ? (
+                        {section.data.length > 0 ? (
                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                               {section.data.map(show => <ShowCard key={show.id} show={show} />)}
                            </div>
-                        ) : (
+                        ) : section.isCommunityLists ? null : (
                            <div className="text-center text-gray-500 text-sm py-10 font-bold">No data yet.</div>
                         )}
                      </div>
@@ -1906,6 +1887,10 @@ const Profile = () => {
    const [isSavingProfile, setIsSavingProfile] = useState(false);
    const [isUpdatingFavs, setIsUpdatingFavs] = useState(false);
    const [isFollowLoading, setIsFollowLoading] = useState(false);
+   const [followers, setFollowers] = useState<User[]>([]);
+   const [following, setFollowing] = useState<User[]>([]);
+   const [showFollowersModal, setShowFollowersModal] = useState(false);
+   const [showFollowingModal, setShowFollowingModal] = useState(false);
 
    const [editEmail, setEditEmail] = useState('');
 
@@ -1944,6 +1929,14 @@ const Profile = () => {
             setProfileUser(targetUser);
             const userReviews = await getReviewsByUserId(targetUser.id);
             setReviews(userReviews);
+
+            // Load followers and following
+            const [followersList, followingList] = await Promise.all([
+               getFollowers(targetUser.id),
+               getFollowing(targetUser.id)
+            ]);
+            setFollowers(followersList);
+            setFollowing(followingList);
 
             // Set Background
             setBackground(targetUser.backgroundTheme || null);
@@ -2096,15 +2089,23 @@ const Profile = () => {
    };
 
    const handleFollowToggle = async () => {
-      if (!currentUser || !profileUser) return;
-      setIsFollowLoading(true);
+      if (!profileUser || !currentUser) return;
       try {
+         setIsFollowLoading(true);
          if (currentUser.following.includes(profileUser.id)) {
             await unfollowUser(profileUser.id);
          } else {
             await followUser(profileUser.id);
          }
          await refreshUser();
+
+         // Refresh followers/following lists
+         const [followersList, followingList] = await Promise.all([
+            getFollowers(profileUser.id),
+            getFollowing(profileUser.id)
+         ]);
+         setFollowers(followersList);
+         setFollowing(followingList);
       } finally {
          setIsFollowLoading(false);
       }
@@ -2157,7 +2158,27 @@ const Profile = () => {
                   <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center justify-center md:justify-start gap-2">
                      <Calendar size={12} /> Member since {new Date(profileUser.joinedAt).toLocaleDateString()}
                   </div>
-                  {profileUser.bio && <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium max-w-2xl text-shadow mx-auto md:mx-0">{profileUser.bio}</p>}
+                  {profileUser.bio && <p className="text-gray-300 text-sm sm:text-base md:text-lg font-medium max-w-2xl text-shadow mx-auto md:mx-0 mb-4">{profileUser.bio}</p>}
+
+                  {/* Followers/Following */}
+                  <div className="flex items-center gap-6 justify-center md:justify-start mb-4">
+                     <button
+                        onClick={() => setShowFollowersModal(true)}
+                        className="group flex items-center gap-2 hover:text-accentGreen transition"
+                     >
+                        <Users size={16} className="text-gray-500 group-hover:text-accentGreen transition" />
+                        <span className="text-white font-bold">{followers.length}</span>
+                        <span className="text-gray-400 text-sm">Followers</span>
+                     </button>
+                     <button
+                        onClick={() => setShowFollowingModal(true)}
+                        className="group flex items-center gap-2 hover:text-accentGreen transition"
+                     >
+                        <Users size={16} className="text-gray-500 group-hover:text-accentGreen transition" />
+                        <span className="text-white font-bold">{following.length}</span>
+                        <span className="text-gray-400 text-sm">Following</span>
+                     </button>
+                  </div>
                </div>
                {isOwnProfile && (
                   <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 justify-center md:justify-start w-full md:w-auto">
@@ -3005,8 +3026,89 @@ const Tracking = () => {
             ))}
          </div>
       </div>
+
+      {/* Followers Modal */ }
+   {
+      showFollowersModal && (
+         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowersModal(false)}>
+            <div className="bg-[#1f2329] rounded-2xl border border-white/10 max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+               <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-xl font-black text-white">Followers ({followers.length})</h3>
+                  <button onClick={() => setShowFollowersModal(false)} className="text-gray-400 hover:text-white transition">
+                     <X size={24} />
+                  </button>
+               </div>
+               <div className="p-4 overflow-y-auto max-h-[60vh]">
+                  {followers.length === 0 ? (
+                     <div className="text-center text-gray-500 py-8">No followers yet</div>
+                  ) : (
+                     <div className="space-y-3">
+                        {followers.map(follower => (
+                           <Link
+                              key={follower.id}
+                              to={`/profile/${follower.id}`}
+                              onClick={() => setShowFollowersModal(false)}
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition group"
+                           >
+                              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(follower.username)} flex items-center justify-center text-white font-bold overflow-hidden`}>
+                                 {follower.avatar ? <img src={follower.avatar} className="w-full h-full object-cover" /> : follower.username[0].toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <div className="font-bold text-white group-hover:text-accentGreen transition truncate">{follower.username}</div>
+                                 {follower.bio && <div className="text-sm text-gray-400 truncate">{follower.bio}</div>}
+                              </div>
+                           </Link>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      )
+   }
+
+   {/* Following Modal */ }
+   {
+      showFollowingModal && (
+         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowingModal(false)}>
+            <div className="bg-[#1f2329] rounded-2xl border border-white/10 max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+               <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                  <h3 className="text-xl font-black text-white">Following ({following.length})</h3>
+                  <button onClick={() => setShowFollowingModal(false)} className="text-gray-400 hover:text-white transition">
+                     <X size={24} />
+                  </button>
+               </div>
+               <div className="p-4 overflow-y-auto max-h-[60vh]">
+                  {following.length === 0 ? (
+                     <div className="text-center text-gray-500 py-8">Not following anyone yet</div>
+                  ) : (
+                     <div className="space-y-3">
+                        {following.map(user => (
+                           <Link
+                              key={user.id}
+                              to={`/profile/${user.id}`}
+                              onClick={() => setShowFollowingModal(false)}
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition group"
+                           >
+                              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(user.username)} flex items-center justify-center text-white font-bold overflow-hidden`}>
+                                 {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <div className="font-bold text-white group-hover:text-accentGreen transition truncate">{user.username}</div>
+                                 {user.bio && <div className="text-sm text-gray-400 truncate">{user.bio}</div>}
+                              </div>
+                           </Link>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      )
+   }
+   </div >
    );
-}
+};
 
 
 
