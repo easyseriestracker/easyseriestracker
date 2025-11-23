@@ -358,97 +358,114 @@ const Navbar = () => {
                {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
 
-            <div className="hidden md:flex items-center gap-8">
-               <div className="flex items-center gap-6">
+            <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
+               {/* Navigation Links - Slide left when search opens */}
+               <div className={`flex items-center gap-8 transition-all duration-500 ease-out ${showSearch ? 'opacity-0 -translate-x-20 pointer-events-none absolute' : 'opacity-100 translate-x-0 relative'}`}>
                   <Link to="/members" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/members' ? 'text-white' : 'text-gray-400'}`}>{t('community')}</Link>
                   <Link to="/browse" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/browse' ? 'text-white' : 'text-gray-400'}`}>{t('discoverShows') || 'Discover'}</Link>
+                  {user && (
+                     <Link to="/watchlist" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/watchlist' ? 'text-white' : 'text-gray-400'}`}>{t('watchlist')}</Link>
+                  )}
+               </div>
 
-                  {/* Search Icon */}
-                  <div className="relative" ref={searchRef}>
-                     <button
-                        onClick={() => { setShowSearch(!showSearch); setTimeout(() => document.getElementById('nav-search')?.focus(), 100); }}
-                        className={`text-gray-400 hover:text-white transition-colors ${showSearch ? 'text-white' : ''}`}
-                     >
-                        <Search size={18} />
-                     </button>
-
-                     <div className={`absolute top-full right-0 mt-4 w-80 bg-[#1f2329] border border-white/10 rounded-xl shadow-2xl overflow-hidden transition-all duration-200 origin-top-right ${showSearch ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                        <div className="p-3 border-b border-white/5">
+               {/* Search & Profile Container */}
+               <div className="flex items-center gap-6">
+                  {/* Search Bar - Expands */}
+                  <div className={`relative flex items-center transition-all duration-500 ease-out ${showSearch ? 'w-[600px]' : 'w-auto'}`} ref={searchRef}>
+                     {/* Expanded Input */}
+                     <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-full transition-all duration-500 ${showSearch ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                        <div className="relative w-full group">
+                           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accentGreen transition-colors" size={22} />
                            <input
                               id="nav-search"
                               type="text"
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               placeholder={t('searchPlaceholder')}
-                              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accentGreen/50"
+                              className="w-full bg-[#1f2329] border border-white/10 rounded-full pl-14 pr-12 py-4 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen/50 focus:shadow-[0_0_30px_rgba(0,224,84,0.1)] transition-all"
                            />
+                           {searchQuery && (
+                              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1 hover:bg-white/10 rounded-full transition">
+                                 <X size={18} />
+                              </button>
+                           )}
+
+                           {/* Search Results Dropdown */}
+                           {(searchResults.shows.length > 0 || searchResults.users.length > 0) && (
+                              <div className="absolute top-full left-0 right-0 mt-4 bg-[#1f2329] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in-up">
+                                 {searchResults.shows.length > 0 && (
+                                    <div className="p-2">
+                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-4 py-2">Shows</div>
+                                       {searchResults.shows.map(s => (
+                                          <button
+                                             key={s.id}
+                                             onClick={() => { navigate(`/show/${s.id}`); setShowSearch(false); setSearchQuery(''); }}
+                                             className="w-full flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition text-left group/item"
+                                          >
+                                             <img src={getImageUrl(s.poster_path)} className="w-12 h-16 object-cover rounded-lg bg-gray-800 shadow-md group-hover/item:scale-105 transition-transform" />
+                                             <div className="min-w-0 flex-1">
+                                                <div className="text-base font-bold text-white truncate group-hover/item:text-accentGreen transition-colors">{s.name}</div>
+                                                <div className="text-xs text-gray-500 font-medium">{s.first_air_date?.split('-')[0]}</div>
+                                             </div>
+                                          </button>
+                                       ))}
+                                    </div>
+                                 )}
+                                 {searchResults.users.length > 0 && (
+                                    <div className="p-2 border-t border-white/5">
+                                       <div className="text-[10px] font-bold uppercase text-gray-500 px-4 py-2">Users</div>
+                                       {searchResults.users.map(u => (
+                                          <button
+                                             key={u.id}
+                                             onClick={() => { navigate(`/profile/${u.id}`); setShowSearch(false); setSearchQuery(''); }}
+                                             className="w-full flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl transition text-left"
+                                          >
+                                             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarColor(u.username)} flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
+                                                {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover rounded-full" /> : u.username[0]}
+                                             </div>
+                                             <div className="text-base font-bold text-white truncate">{u.username}</div>
+                                          </button>
+                                       ))}
+                                    </div>
+                                 )}
+                              </div>
+                           )}
                         </div>
-                        {(searchResults.shows.length > 0 || searchResults.users.length > 0) && (
-                           <div className="max-h-96 overflow-y-auto">
-                              {searchResults.shows.length > 0 && (
-                                 <div className="p-2">
-                                    <div className="text-[10px] font-bold uppercase text-gray-500 px-2 mb-1">Shows</div>
-                                    {searchResults.shows.map(s => (
-                                       <button
-                                          key={s.id}
-                                          onClick={() => { navigate(`/show/${s.id}`); setShowSearch(false); setSearchQuery(''); }}
-                                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
-                                       >
-                                          <img src={getImageUrl(s.poster_path)} className="w-8 h-12 object-cover rounded bg-gray-800" />
-                                          <div className="min-w-0">
-                                             <div className="text-sm font-bold text-white truncate">{s.name}</div>
-                                             <div className="text-xs text-gray-500">{s.first_air_date?.split('-')[0]}</div>
-                                          </div>
-                                       </button>
-                                    ))}
-                                 </div>
-                              )}
-                              {searchResults.users.length > 0 && (
-                                 <div className="p-2 border-t border-white/5">
-                                    <div className="text-[10px] font-bold uppercase text-gray-500 px-2 mb-1">Users</div>
-                                    {searchResults.users.map(u => (
-                                       <button
-                                          key={u.id}
-                                          onClick={() => { navigate(`/profile/${u.id}`); setShowSearch(false); setSearchQuery(''); }}
-                                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition text-left"
-                                       >
-                                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(u.username)} flex items-center justify-center text-white text-xs font-bold`}>
-                                             {u.avatar ? <img src={u.avatar} className="w-full h-full object-cover rounded-full" /> : u.username[0]}
-                                          </div>
-                                          <div className="text-sm font-bold text-white truncate">{u.username}</div>
-                                       </button>
-                                    ))}
-                                 </div>
-                              )}
-                           </div>
-                        )}
                      </div>
+
+                     {/* Search Toggle Button (Visible when closed) */}
+                     <button
+                        onClick={() => { setShowSearch(true); setTimeout(() => document.getElementById('nav-search')?.focus(), 100); }}
+                        className={`text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full ${showSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                     >
+                        <Search size={20} />
+                     </button>
+                  </div>
+
+                  {/* Profile / Login - Hides when search is open */}
+                  <div className={`flex items-center gap-6 transition-all duration-500 ${showSearch ? 'opacity-0 translate-x-10 pointer-events-none hidden' : 'opacity-100 translate-x-0'}`}>
+                     {user ? (
+                        <>
+                           <div className="h-5 w-px bg-white/10 block" />
+                           <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition group">
+                              <div className="text-right block">
+                                 <span className="block text-xs font-bold text-white group-hover:text-accentGreen transition-colors">{user.username}</span>
+                              </div>
+                              <div className={`w-9 h-9 rounded-full ring-2 ring-transparent group-hover:ring-accentGreen overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)}`}>
+                                 {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
+                              </div>
+                           </Link>
+                        </>
+                     ) : (
+                        <div className="flex items-center gap-4">
+                           <Link to="/login" className="text-xs font-bold uppercase text-gray-300 hover:text-white tracking-wider">{t('login')}</Link>
+                           <Link to="/register">
+                              <Button variant="primary" className="!py-2 !px-5 !rounded-full text-xs">{t('joinNow')}</Button>
+                           </Link>
+                        </div>
+                     )}
                   </div>
                </div>
-
-               {user ? (
-                  <>
-                     <div className="flex items-center gap-6">
-                        <Link to="/watchlist" className={`text-xs font-bold uppercase tracking-widest hover:text-accentGreen transition-colors ${location.pathname === '/watchlist' ? 'text-white' : 'text-gray-400'}`}>{t('watchlist')}</Link>
-                     </div>
-                     <div className="h-5 w-px bg-white/10 block" />
-                     <Link to="/profile" className="flex items-center gap-3 hover:opacity-80 transition group pl-2">
-                        <div className="text-right block">
-                           <span className="block text-xs font-bold text-white group-hover:text-accentGreen transition-colors">{user.username}</span>
-                        </div>
-                        <div className={`w-9 h-9 rounded-full ring-2 ring-transparent group-hover:ring-accentGreen overflow-hidden flex items-center justify-center text-white font-black bg-gradient-to-br ${getAvatarColor(user.username)}`}>
-                           {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
-                        </div>
-                     </Link>
-                  </>
-               ) : (
-                  <div className="flex items-center gap-4">
-                     <Link to="/login" className="text-xs font-bold uppercase text-gray-300 hover:text-white tracking-wider">{t('login')}</Link>
-                     <Link to="/register">
-                        <Button variant="primary" className="!py-2 !px-5 !rounded-full text-xs">{t('joinNow')}</Button>
-                     </Link>
-                  </div>
-               )}
             </div>
 
             <div className={`fixed inset-0 bg-[#14181c]/95 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8 transition-all duration-500 md:hidden ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
@@ -687,35 +704,41 @@ const Home = () => {
                getShowsByIds(commTrackIds)
             ]);
 
-            // Reorder: Most Watchlisted -> Global Trending -> Community Top
-            // We need to reconstruct the array carefully
+            // Reorder: Friends Activity -> Community Lists -> Most Watchlisted -> Community Top -> Global Trending
             setSections(prev => {
                // 1. Extract special sections
                const activitySection = prev.find(s => s.isActivity);
                const trendingSection = prev.find(s => s.title === t('globalTrending'));
 
-               // 2. Filter out sections we are about to re-add or re-order to avoid duplicates
+               // 2. Filter out sections we are about to re-add or re-order
                const otherSections = prev.filter(s =>
                   s.title !== t('globalTrending') &&
                   !s.isActivity &&
                   s.title !== t('mostTracked') &&
-                  s.title !== t('communityTop')
+                  s.title !== t('communityTop') &&
+                  s.title !== 'Community Lists'
                );
 
                const finalSections = [];
 
-               // 3. Add sections in desired order
+               // 1. Friends Activity
                if (activitySection) finalSections.push(activitySection);
 
+               // 2. Community Lists (Placeholder, data loaded separately)
+               finalSections.push({ title: 'Community Lists', data: [], link: "/lists", isCommunityLists: true });
+
+               // 3. Most Watchlisted
                if (commTrack.length > 0) {
                   finalSections.push({ title: t('mostTracked'), data: commTrack, link: "/browse?sort=site_pop", isCommunity: true });
                }
 
-               if (trendingSection) finalSections.push(trendingSection);
-
+               // 4. Community Top Rated
                if (commTop.length > 0) {
                   finalSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
                }
+
+               // 5. Global Trending
+               if (trendingSection) finalSections.push(trendingSection);
 
                return [...finalSections, ...otherSections];
             });
@@ -735,7 +758,7 @@ const Home = () => {
          ]);
 
          setSections(prev => {
-            // Check for duplicates by title to avoid adding same section twice
+            // Check for duplicates by title
             const existingTitles = new Set(prev.map(s => s.title));
             const newSections = [];
 
@@ -961,10 +984,18 @@ const Home = () => {
                                        <div className={`w-12 h-12 rounded-full overflow-hidden border-2 border-accentGreen/20 bg-gradient-to-br ${getAvatarColor(item.username)}`}>
                                           {item.avatar ? <img src={item.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-white">{item.username[0]}</div>}
                                        </div>
-                                       <div className="absolute -bottom-1 -right-1 bg-accentGreen text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg">Watched</div>
+                                       {item.type === 'rated' ? (
+                                          <div className="absolute -bottom-1 -right-1 bg-accentOrange text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-0.5">
+                                             <Star size={6} fill="black" /> {item.rating}
+                                          </div>
+                                       ) : (
+                                          <div className="absolute -bottom-1 -right-1 bg-accentGreen text-black text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-lg">Watched</div>
+                                       )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                       <div className="text-xs text-gray-400 mb-0.5"><span className="font-bold text-white">{item.username}</span> watched</div>
+                                       <div className="text-xs text-gray-400 mb-0.5">
+                                          <span className="font-bold text-white">{item.username}</span> {item.type === 'rated' ? 'rated' : 'watched'}
+                                       </div>
                                        <div className="font-bold text-white truncate group-hover:text-accentGreen transition-colors">{item.show.name}</div>
                                     </div>
                                     <div className="w-10 h-14 rounded bg-gray-800 overflow-hidden flex-shrink-0 shadow-lg">
@@ -982,215 +1013,223 @@ const Home = () => {
                         )}
                      </div>
 
-                     {/* Community Lists Section - Right after Global Trending */}
-                     {idx === 0 && communityLists.length > 0 && (
-                        <div className="mb-16">
-                           <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
-                              <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
-                           </div>
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {communityLists.slice(0, 6).map(list => (
-                                 <Link
-                                    key={list.id}
-                                    to={`/list/${list.id}`}
-                                    className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
-                                 >
-                                    {/* List Preview */}
-                                    <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
-                                       {list.items.slice(0, 4).map((show: any, idx: number) => (
-                                          <div key={idx} className="relative overflow-hidden">
-                                             <img
-                                                src={getImageUrl(show.poster_path)}
-                                                className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
-                                                alt=""
-                                             />
-                                          </div>
-                                       ))}
-                                       {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
-                                          <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
-                                             <Film size={20} className="text-gray-700" />
-                                          </div>
-                                       ))}
-                                    </div>
+                     {/* Community Lists Section */}
+                     {
+                        section.isCommunityLists && communityLists.length > 0 && (
+                           <div className="mb-16">
+                              <div className="flex items-end justify-between mb-6 border-b border-white/5 pb-2">
+                                 <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Community Lists</h2>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                 {communityLists.slice(0, 6).map(list => (
+                                    <Link
+                                       key={list.id}
+                                       to={`/list/${list.id}`}
+                                       className="group bg-[#1f2329] rounded-xl border border-white/10 hover:border-accentGreen/50 transition-all overflow-hidden hover:shadow-lg hover:shadow-accentGreen/10"
+                                    >
+                                       {/* List Preview */}
+                                       <div className="grid grid-cols-4 h-32 bg-gradient-to-b from-white/5 to-transparent">
+                                          {list.items.slice(0, 4).map((show: any, idx: number) => (
+                                             <div key={idx} className="relative overflow-hidden">
+                                                <img
+                                                   src={getImageUrl(show.poster_path)}
+                                                   className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition"
+                                                   alt=""
+                                                />
+                                             </div>
+                                          ))}
+                                          {list.items.length < 4 && [...Array(4 - list.items.length)].map((_, idx) => (
+                                             <div key={`empty-${idx}`} className="bg-white/5 flex items-center justify-center">
+                                                <Film size={20} className="text-gray-700" />
+                                             </div>
+                                          ))}
+                                       </div>
 
-                                    {/* List Info */}
-                                    <div className="p-4">
-                                       <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
-                                          {list.name}
-                                       </h3>
-                                       <div className="flex items-center gap-2 mb-2">
-                                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                             {list.username[0]?.toUpperCase()}
+                                       {/* List Info */}
+                                       <div className="p-4">
+                                          <h3 className="text-white font-black text-lg mb-1 group-hover:text-accentGreen transition line-clamp-1">
+                                             {list.name}
+                                          </h3>
+                                          <div className="flex items-center gap-2 mb-2">
+                                             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                                                {list.username[0]?.toUpperCase()}
+                                             </div>
+                                             <span className="text-xs font-bold text-gray-400">{list.username}</span>
                                           </div>
-                                          <span className="text-xs font-bold text-gray-400">{list.username}</span>
+                                          <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                                             {list.description || 'No description'}
+                                          </p>
+                                          <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
+                                             <span className="flex items-center gap-1">
+                                                <Film size={12} /> {list.items.length}
+                                             </span>
+                                             <span className="flex items-center gap-1">
+                                                <Heart size={12} /> {list.likes || 0}
+                                             </span>
+                                          </div>
                                        </div>
-                                       <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-                                          {list.description || 'No description'}
-                                       </p>
-                                       <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-                                          <span className="flex items-center gap-1">
-                                             <Film size={12} /> {list.items.length}
-                                          </span>
-                                          <span className="flex items-center gap-1">
-                                             <Heart size={12} /> {list.likes || 0}
-                                          </span>
-                                       </div>
-                                    </div>
-                                 </Link>
-                              ))}
+                                    </Link>
+                                 ))}
+                              </div>
                            </div>
-                        </div>
-                     )}
+                        )
+                     }
                   </React.Fragment>
                ))}
             </div>
          </div>
 
          {/* Rating Reminder Modal */}
-         {showRatingReminder && reminderShow && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-               <div className="bg-[#1f2329] rounded-2xl border border-white/10 shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
-                  {/* Show Backdrop */}
-                  <div className="relative h-48 bg-gradient-to-b from-transparent to-[#1f2329]">
-                     {reminderShow.backdrop_path && (
-                        <>
-                           <img src={getImageUrl(reminderShow.backdrop_path, 'w500')} className="w-full h-full object-cover opacity-50" alt="" />
-                           <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/50 to-transparent" />
-                        </>
-                     )}
-                     <button
-                        onClick={() => setShowRatingReminder(false)}
-                        className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition"
-                     >
-                        <X size={16} className="text-white" />
-                     </button>
-                  </div>
-
-                  <div className="p-6 -mt-16 relative z-10">
-                     <div className="flex gap-4 mb-4">
-                        <img
-                           src={getImageUrl(reminderShow.poster_path)}
-                           alt={reminderShow.name}
-                           className="w-24 h-36 rounded-lg shadow-xl border-2 border-white/20"
-                        />
-                        <div className="flex-1">
-                           <h3 className="text-xl font-black text-white mb-1">{reminderShow.name}</h3>
-                           <p className="text-xs text-gray-400 mb-2">{reminderShow.first_air_date?.split('-')[0]} • {reminderShow.number_of_seasons} Seasons</p>
-                           <p className="text-sm text-gray-300 line-clamp-2">{reminderShow.overview}</p>
-                        </div>
-                     </div>
-
-                     <div className="bg-[#14181c] rounded-xl p-4 mb-4">
-                        <p className="text-sm text-gray-300 mb-3 text-center font-medium">How's it going? Rate your experience!</p>
-                        <div className="flex justify-center gap-2">
-                           {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                 key={star}
-                                 onClick={() => setReminderRating(star)}
-                                 className="transition-transform hover:scale-125"
-                              >
-                                 <Star
-                                    size={32}
-                                    className={`${reminderRating >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-600 hover:text-accentOrange'}`}
-                                 />
-                              </button>
-                           ))}
-                        </div>
-                     </div>
-
-                     <div className="flex gap-3">
+         {
+            showRatingReminder && reminderShow && (
+               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-[#1f2329] rounded-2xl border border-white/10 shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+                     {/* Show Backdrop */}
+                     <div className="relative h-48 bg-gradient-to-b from-transparent to-[#1f2329]">
+                        {reminderShow.backdrop_path && (
+                           <>
+                              <img src={getImageUrl(reminderShow.backdrop_path, 'w500')} className="w-full h-full object-cover opacity-50" alt="" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#1f2329] via-[#1f2329]/50 to-transparent" />
+                           </>
+                        )}
                         <button
                            onClick={() => setShowRatingReminder(false)}
-                           className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white hover:text-accentGreen transition-all duration-200 border border-white/20 hover:border-accentGreen/50 hover:shadow-lg hover:shadow-accentGreen/10"
+                           className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition"
                         >
-                           Maybe Later
+                           <X size={16} className="text-white" />
+                        </button>
+                     </div>
+
+                     <div className="p-6 -mt-16 relative z-10">
+                        <div className="flex gap-4 mb-4">
+                           <img
+                              src={getImageUrl(reminderShow.poster_path)}
+                              alt={reminderShow.name}
+                              className="w-24 h-36 rounded-lg shadow-xl border-2 border-white/20"
+                           />
+                           <div className="flex-1">
+                              <h3 className="text-xl font-black text-white mb-1">{reminderShow.name}</h3>
+                              <p className="text-xs text-gray-400 mb-2">{reminderShow.first_air_date?.split('-')[0]} • {reminderShow.number_of_seasons} Seasons</p>
+                              <p className="text-sm text-gray-300 line-clamp-2">{reminderShow.overview}</p>
+                           </div>
+                        </div>
+
+                        <div className="bg-[#14181c] rounded-xl p-4 mb-4">
+                           <p className="text-sm text-gray-300 mb-3 text-center font-medium">How's it going? Rate your experience!</p>
+                           <div className="flex justify-center gap-2">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                 <button
+                                    key={star}
+                                    onClick={() => setReminderRating(star)}
+                                    className="transition-transform hover:scale-125"
+                                 >
+                                    <Star
+                                       size={32}
+                                       className={`${reminderRating >= star ? 'text-accentOrange fill-accentOrange' : 'text-gray-600 hover:text-accentOrange'}`}
+                                    />
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                           <button
+                              onClick={() => setShowRatingReminder(false)}
+                              className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white hover:text-accentGreen transition-all duration-200 border border-white/20 hover:border-accentGreen/50 hover:shadow-lg hover:shadow-accentGreen/10"
+                           >
+                              Maybe Later
+                           </button>
+                           <button
+                              onClick={() => handleReminderRate(reminderRating)}
+                              disabled={reminderRating === 0}
+                              className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                              Rate Show
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )
+         }
+
+         {/* Suggestion Floating Button - Bottom Right */}
+         {
+            user && (
+               <button
+                  onClick={() => setShowSuggestionModal(true)}
+                  className="fixed bottom-8 right-8 z-50 bg-accentGreen hover:bg-accentGreen/80 text-black rounded-full p-4 shadow-2xl hover:shadow-accentGreen/50 transition-all duration-300 hover:scale-110 flex items-center gap-2 group"
+                  title="Öneride Bulun"
+               >
+                  <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
+                  <span className="font-black text-sm uppercase tracking-tighter hidden md:block">Suggest</span>
+               </button>
+            )
+         }
+
+         {/* Suggestion Modal */}
+         {
+            showSuggestionModal && (
+               <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                  <div className="bg-[#1f2329] rounded-2xl border border-white/10 p-6 max-w-lg w-full shadow-2xl">
+                     <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{t('suggestions')}</h2>
+                        <button
+                           onClick={() => {
+                              setShowSuggestionModal(false);
+                              setSuggestionText('');
+                           }}
+                           className="text-gray-400 hover:text-white transition"
+                        >
+                           <X size={24} />
+                        </button>
+                     </div>
+                     <p className="text-gray-400 text-sm mb-4">Share your suggestions for the site. Your feedback is very valuable to us!</p>
+                     <textarea
+                        value={suggestionText}
+                        onChange={(e) => setSuggestionText(e.target.value)}
+                        placeholder="Write your suggestions here..."
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen resize-none h-32 mb-4"
+                     />
+                     <div className="flex gap-3">
+                        <button
+                           onClick={() => {
+                              setShowSuggestionModal(false);
+                              setSuggestionText('');
+                           }}
+                           className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white transition"
+                        >
+                           {t('cancel')}
                         </button>
                         <button
-                           onClick={() => handleReminderRate(reminderRating)}
-                           disabled={reminderRating === 0}
-                           className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                           onClick={async () => {
+                              if (!suggestionText.trim()) {
+                                 alert('Please write a suggestion.');
+                                 return;
+                              }
+                              try {
+                                 await submitSuggestion(suggestionText);
+                                 alert('Your suggestion has been sent! Thank you.');
+                                 setShowSuggestionModal(false);
+                                 setSuggestionText('');
+                              } catch (error: any) {
+                                 if (error.message?.includes('suggestions')) {
+                                    alert('The suggestions table has not been created yet. Please run the SQL in setup_db.sql on your Supabase dashboard.');
+                                 } else {
+                                    alert('An error occurred while sending the suggestion: ' + (error.message || 'Unknown error'));
+                                 }
+                              }
+                           }}
+                           className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition"
                         >
-                           Rate Show
+                           {t('send')}
                         </button>
                      </div>
                   </div>
                </div>
-            </div>
-         )}
-
-         {/* Suggestion Floating Button - Bottom Right */}
-         {user && (
-            <button
-               onClick={() => setShowSuggestionModal(true)}
-               className="fixed bottom-8 right-8 z-50 bg-accentGreen hover:bg-accentGreen/80 text-black rounded-full p-4 shadow-2xl hover:shadow-accentGreen/50 transition-all duration-300 hover:scale-110 flex items-center gap-2 group"
-               title="Öneride Bulun"
-            >
-               <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
-               <span className="font-black text-sm uppercase tracking-tighter hidden md:block">Suggest</span>
-            </button>
-         )}
-
-         {/* Suggestion Modal */}
-         {showSuggestionModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-               <div className="bg-[#1f2329] rounded-2xl border border-white/10 p-6 max-w-lg w-full shadow-2xl">
-                  <div className="flex items-center justify-between mb-4">
-                     <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{t('suggestions')}</h2>
-                     <button
-                        onClick={() => {
-                           setShowSuggestionModal(false);
-                           setSuggestionText('');
-                        }}
-                        className="text-gray-400 hover:text-white transition"
-                     >
-                        <X size={24} />
-                     </button>
-                  </div>
-                  <p className="text-gray-400 text-sm mb-4">Share your suggestions for the site. Your feedback is very valuable to us!</p>
-                  <textarea
-                     value={suggestionText}
-                     onChange={(e) => setSuggestionText(e.target.value)}
-                     placeholder="Write your suggestions here..."
-                     className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-accentGreen resize-none h-32 mb-4"
-                  />
-                  <div className="flex gap-3">
-                     <button
-                        onClick={() => {
-                           setShowSuggestionModal(false);
-                           setSuggestionText('');
-                        }}
-                        className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm text-white transition"
-                     >
-                        {t('cancel')}
-                     </button>
-                     <button
-                        onClick={async () => {
-                           if (!suggestionText.trim()) {
-                              alert('Please write a suggestion.');
-                              return;
-                           }
-                           try {
-                              await submitSuggestion(suggestionText);
-                              alert('Your suggestion has been sent! Thank you.');
-                              setShowSuggestionModal(false);
-                              setSuggestionText('');
-                           } catch (error: any) {
-                              if (error.message?.includes('suggestions')) {
-                                 alert('The suggestions table has not been created yet. Please run the SQL in setup_db.sql on your Supabase dashboard.');
-                              } else {
-                                 alert('An error occurred while sending the suggestion: ' + (error.message || 'Unknown error'));
-                              }
-                           }
-                        }}
-                        className="flex-1 py-3 bg-accentGreen hover:bg-accentGreen/80 rounded-xl font-bold text-sm text-black transition"
-                     >
-                        {t('send')}
-                     </button>
-                  </div>
-               </div>
-            </div>
-         )}
-      </div>
+            )
+         }
+      </div >
    );
 };
 

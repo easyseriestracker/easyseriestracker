@@ -488,7 +488,7 @@ export const unfollowUser = async (targetUserId: string) => {
   await supabase.from('profiles').update({ following: newFollowing }).eq('id', user.id);
 };
 
-export const getFriendsActivity = async (): Promise<{ username: string, avatar: string, show: Show }[]> => {
+export const getFriendsActivity = async (): Promise<{ username: string, avatar: string, show: Show, type: 'watched' | 'rated', rating?: number, date?: string }[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
@@ -501,40 +501,67 @@ export const getFriendsActivity = async (): Promise<{ username: string, avatar: 
   const { data: friends } = await supabase.from('profiles').select('id, username, avatar_url, watched').in('id', followingIds);
   if (!friends) return [];
 
-  const activity: { username: string, avatar: string, show: Show }[] = [];
+  // Fetch recent ratings from followed users
+  const { data: ratings } = await supabase
+    .from('ratings')
+    .select('user_id, show_id, rating, created_at')
+    .in('user_id', followingIds)
+    .order('created_at', { ascending: false })
+    .limit(20);
 
-  // Collect all watched shows from friends
-  // Note: This is a bit expensive if friends have many watched shows. 
-  // For now, we'll take the last 5 watched shows from each friend.
-  // Ideally, we'd have a separate 'activities' table.
-
+  const activity: { username: string, avatar: string, show: Show, type: 'watched' | 'rated', rating?: number, date?: string }[] = [];
   const allShowIds = new Set<number>();
+
+  // 1. Process Watched (No timestamp, so we assume recent)
   friends.forEach((friend: any) => {
     const watched = friend.watched || [];
-    watched.slice(-3).forEach((showId: number) => allShowIds.add(showId));
+    watched.slice(-2).forEach((showId: number) => allShowIds.add(showId));
   });
+
+  // 2. Process Ratings
+  ratings?.forEach((r: any) => allShowIds.add(r.show_id));
 
   if (allShowIds.size === 0) return [];
 
   const shows = await getShowsByIds(Array.from(allShowIds));
   const showMap = new Map(shows.map(s => [s.id, s]));
 
+  // Add Watched Activity
   friends.forEach((friend: any) => {
     const watched = friend.watched || [];
-    watched.slice(-3).reverse().forEach((showId: number) => {
+    watched.slice(-2).reverse().forEach((showId: number) => {
       const show = showMap.get(showId);
       if (show) {
         activity.push({
           username: friend.username,
           avatar: friend.avatar_url,
-          show
+          show,
+          type: 'watched'
         });
       }
     });
   });
 
-  // Shuffle or sort? Let's just return as is (grouped by user roughly)
-  return activity;
+  // Add Rated Activity
+  ratings?.forEach((r: any) => {
+    const friend = friends.find((f: any) => f.id === r.user_id);
+    const show = showMap.get(r.show_id);
+    if (friend && show) {
+      activity.push({
+        username: friend.username,
+        avatar: friend.avatar_url,
+        show,
+        type: 'rated',
+        rating: r.rating,
+        date: r.created_at
+      });
+    }
+  });
+
+  // Shuffle to mix them up since we don't have timestamps for all
+  // Or better, put ratings with dates first?
+  // Let's just return them mixed.
+  return activity.sort(() => Math.random() - 0.5);
 };
 
 // --- LISTS SYSTEM ---
