@@ -690,11 +690,21 @@ const Home = () => {
             // Reorder: Most Watchlisted -> Global Trending -> Community Top
             // We need to reconstruct the array carefully
             setSections(prev => {
+               // 1. Extract special sections
                const activitySection = prev.find(s => s.isActivity);
                const trendingSection = prev.find(s => s.title === t('globalTrending'));
 
+               // 2. Filter out sections we are about to re-add or re-order to avoid duplicates
+               const otherSections = prev.filter(s =>
+                  s.title !== t('globalTrending') &&
+                  !s.isActivity &&
+                  s.title !== t('mostTracked') &&
+                  s.title !== t('communityTop')
+               );
+
                const finalSections = [];
 
+               // 3. Add sections in desired order
                if (activitySection) finalSections.push(activitySection);
 
                if (commTrack.length > 0) {
@@ -707,8 +717,7 @@ const Home = () => {
                   finalSections.push({ title: t('communityTop'), data: commTop, link: "/browse?sort=site_rating", isCommunity: true });
                }
 
-               const rest = prev.filter(s => s.title !== t('globalTrending') && !s.isActivity);
-               return [...finalSections, ...rest];
+               return [...finalSections, ...otherSections];
             });
 
             // Load community lists
@@ -727,16 +736,16 @@ const Home = () => {
 
          setSections(prev => {
             // Check for duplicates by title to avoid adding same section twice
-            const existingTitles = prev.map(s => s.title);
+            const existingTitles = new Set(prev.map(s => s.title));
             const newSections = [];
 
-            if (!existingTitles.includes(t('hallOfFame')) && classics.length > 0) {
+            if (!existingTitles.has(t('hallOfFame')) && classics.length > 0) {
                newSections.push({ title: t('hallOfFame'), data: classics.slice(0, 6), link: "/browse?genre=18" });
             }
-            if (!existingTitles.includes(t('sitcoms')) && comedy.length > 0) {
+            if (!existingTitles.has(t('sitcoms')) && comedy.length > 0) {
                newSections.push({ title: t('sitcoms'), data: comedy.slice(0, 6), link: "/browse?genre=35" });
             }
-            if (!existingTitles.includes(t('mindBenders')) && scifi.length > 0) {
+            if (!existingTitles.has(t('mindBenders')) && scifi.length > 0) {
                newSections.push({ title: t('mindBenders'), data: scifi.slice(0, 6), link: "/browse?genre=10765" });
             }
 
@@ -744,7 +753,7 @@ const Home = () => {
          });
       };
       loadData();
-   }, [t]);
+   }, [t, user]);
 
    useEffect(() => {
       if (heroCandidates.length === 0) return;
