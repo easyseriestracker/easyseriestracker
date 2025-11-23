@@ -1889,8 +1889,6 @@ const Profile = () => {
    const [isFollowLoading, setIsFollowLoading] = useState(false);
    const [followers, setFollowers] = useState<User[]>([]);
    const [following, setFollowing] = useState<User[]>([]);
-   const [showFollowersModal, setShowFollowersModal] = useState(false);
-   const [showFollowingModal, setShowFollowingModal] = useState(false);
 
    const [editEmail, setEditEmail] = useState('');
 
@@ -2162,22 +2160,16 @@ const Profile = () => {
 
                   {/* Followers/Following */}
                   <div className="flex items-center gap-6 justify-center md:justify-start mb-4">
-                     <button
-                        onClick={() => setShowFollowersModal(true)}
-                        className="group flex items-center gap-2 hover:text-accentGreen transition"
-                     >
-                        <Users size={16} className="text-gray-500 group-hover:text-accentGreen transition" />
+                     <div className="group flex items-center gap-2">
+                        <Users size={16} className="text-gray-500" />
                         <span className="text-white font-bold">{followers.length}</span>
                         <span className="text-gray-400 text-sm">Followers</span>
-                     </button>
-                     <button
-                        onClick={() => setShowFollowingModal(true)}
-                        className="group flex items-center gap-2 hover:text-accentGreen transition"
-                     >
-                        <Users size={16} className="text-gray-500 group-hover:text-accentGreen transition" />
+                     </div>
+                     <div className="group flex items-center gap-2">
+                        <Users size={16} className="text-gray-500" />
                         <span className="text-white font-bold">{following.length}</span>
                         <span className="text-gray-400 text-sm">Following</span>
-                     </button>
+                     </div>
                   </div>
                </div>
                {isOwnProfile && (
@@ -3026,86 +3018,6 @@ const Tracking = () => {
             ))}
          </div>
       </div>
-
-      {/* Followers Modal */ }
-   {
-      showFollowersModal && (
-         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowersModal(false)}>
-            <div className="bg-[#1f2329] rounded-2xl border border-white/10 max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-               <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-xl font-black text-white">Followers ({followers.length})</h3>
-                  <button onClick={() => setShowFollowersModal(false)} className="text-gray-400 hover:text-white transition">
-                     <X size={24} />
-                  </button>
-               </div>
-               <div className="p-4 overflow-y-auto max-h-[60vh]">
-                  {followers.length === 0 ? (
-                     <div className="text-center text-gray-500 py-8">No followers yet</div>
-                  ) : (
-                     <div className="space-y-3">
-                        {followers.map(follower => (
-                           <Link
-                              key={follower.id}
-                              to={`/profile/${follower.id}`}
-                              onClick={() => setShowFollowersModal(false)}
-                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition group"
-                           >
-                              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(follower.username)} flex items-center justify-center text-white font-bold overflow-hidden`}>
-                                 {follower.avatar ? <img src={follower.avatar} className="w-full h-full object-cover" /> : follower.username[0].toUpperCase()}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                 <div className="font-bold text-white group-hover:text-accentGreen transition truncate">{follower.username}</div>
-                                 {follower.bio && <div className="text-sm text-gray-400 truncate">{follower.bio}</div>}
-                              </div>
-                           </Link>
-                        ))}
-                     </div>
-                  )}
-               </div>
-            </div>
-         </div>
-      )
-   }
-
-   {/* Following Modal */ }
-   {
-      showFollowingModal && (
-         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowingModal(false)}>
-            <div className="bg-[#1f2329] rounded-2xl border border-white/10 max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-               <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                  <h3 className="text-xl font-black text-white">Following ({following.length})</h3>
-                  <button onClick={() => setShowFollowingModal(false)} className="text-gray-400 hover:text-white transition">
-                     <X size={24} />
-                  </button>
-               </div>
-               <div className="p-4 overflow-y-auto max-h-[60vh]">
-                  {following.length === 0 ? (
-                     <div className="text-center text-gray-500 py-8">Not following anyone yet</div>
-                  ) : (
-                     <div className="space-y-3">
-                        {following.map(user => (
-                           <Link
-                              key={user.id}
-                              to={`/profile/${user.id}`}
-                              onClick={() => setShowFollowingModal(false)}
-                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition group"
-                           >
-                              <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getAvatarColor(user.username)} flex items-center justify-center text-white font-bold overflow-hidden`}>
-                                 {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" /> : user.username[0].toUpperCase()}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                 <div className="font-bold text-white group-hover:text-accentGreen transition truncate">{user.username}</div>
-                                 {user.bio && <div className="text-sm text-gray-400 truncate">{user.bio}</div>}
-                              </div>
-                           </Link>
-                        ))}
-                     </div>
-                  )}
-               </div>
-            </div>
-         </div>
-      )
-   }
    </div >
    );
 };
