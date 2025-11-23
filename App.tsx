@@ -515,7 +515,11 @@ const ShowCard = ({ show }: { show: Show }) => {
                   className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 z-20 ${isAdded ? 'bg-accentGreen text-black' : 'bg-black/80 text-white hover:bg-accentGreen hover:text-black'} opacity-0 group-hover:opacity-100 hover:scale-110 ${isTrackLoading ? 'opacity-60' : ''}`}
                   title={isAdded ? "Untrack" : "Track"}
                >
-                  {isAdded ? <Check size={20} /> : <Plus size={20} />}
+                  {isTrackLoading ? (
+                     <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  ) : (
+                     isAdded ? <Check size={20} /> : <Plus size={20} />
+                  )}
                </button>
             )}
 
